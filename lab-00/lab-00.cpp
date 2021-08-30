@@ -253,6 +253,9 @@ void specialKeyFunction(int key, int x, int y) {
 
 void mymouse(int key, int state, int x, int y)
 {
+	if (state != GLUT_DOWN)
+		return;
+
 	if (key == GLUT_LEFT_BUTTON)
 		scaleX *= 1.1f;
 	else if (key == GLUT_RIGHT_BUTTON)
@@ -294,6 +297,7 @@ void drawScene(void)
 		Model = rotate(Model, radians(rotateX), glm::vec3(1.0f, 0.0f, 0.0f)); 
 		Model = rotate(Model, radians(rotateY), glm::vec3(0.0f, 1.0f, 0.0f));
 		Model = rotate(Model, radians(rotateZ), glm::vec3(0.0f, 0.0f, 1.0f));
+		//scale factors are applied to the model
 		Model = scale(Model, vec3(scaleX, scaleY, scaleZ));
 
 		//Passo al Vertex Shader il puntatore alla matrice Model, che sar� associata alla variabile Uniform mat4 Projection
