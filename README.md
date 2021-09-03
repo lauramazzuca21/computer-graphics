@@ -11,4 +11,6 @@ Given the Lab00 setup, modify it to:
 Given the Lab01 setup, modify it to:
 - [x] draw Bézier curve with the de Casteljau algorithm
 - [x] drag control points to change their position
-- [ ] draw Bézier curve with the optimized adaptive subdivision algorithm
+- [x] draw Bézier curve with the optimized adaptive subdivision method
+
+## Lab 02 -
