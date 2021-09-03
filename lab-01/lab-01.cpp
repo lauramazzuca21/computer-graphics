@@ -107,6 +107,12 @@ void viewportToWindow(int x, int y, float *xPos, float *yPos)
 	(*yPos) = -1.0f + ((float)(height - y))*2 / ((float)(height));
 }
 
+/*
+ * Checks if (xPos, yPos) is a control point
+ * @param xPos - x position in window coord
+ * @param yPos - y position in window coord
+ * @return int - i: index of CP || -1 if no CP was found
+ */
 int isControlPoint(float xPos, float yPos)
 {
 	float dx = PointRadius/(width*1.0f);
@@ -178,10 +184,23 @@ void addNewPoint(float x, float y) {
 	NumPts++;
 }
 
+/*
+ * linear interpolation of floats
+ * @param v0 		- first value
+ * @param v1 		- second vlaue
+ * @param t 		- parameter value
+ * @return float 	- lerp result
+ */
 float lerp(float v0, float v1, float t) {
   return (1 - t) * v0 + t * v1;
 }
 
+/*
+ * subtraction between vectors
+ * @param a 			- minuend vector
+ * @param b 			- subtrahend vector
+ * @return glm::vec3 	- difference vector
+ */
 glm::vec3 sub(glm::vec3 a, glm::vec3 b)
 {
 	glm::vec3 result;
@@ -191,11 +210,23 @@ glm::vec3 sub(glm::vec3 a, glm::vec3 b)
 	return result;
 }
 
+/*
+ * magnitude of vector a
+ * @param a			- vector
+ * @return float 	- vector a's magnitude
+ */
 float magnitude(glm::vec3 a)
 {
 	return sqrt(powf(a.x, 2) + powf(a.y, 2) + powf(a.z, 2));
 }
 
+/*
+ * point to line distance
+ * @param point		- point
+ * @param lineStart	- first line point
+ * @param lineEnd	- second line point
+ * @return float 	- distance
+ */
 float distPointLine(glm::vec3 point, glm::vec3 lineStart, glm::vec3 lineEnd)
 {
 	glm:: vec3 SE, EP;
@@ -207,6 +238,14 @@ float distPointLine(glm::vec3 point, glm::vec3 lineStart, glm::vec3 lineEnd)
 	return fabsf(area / glm::distance(lineEnd, lineStart));
 }
 
+/*********** ALGORITHMS ***********/
+/*
+ * de Casteljau algorithm
+ * @param t			- parameter value 
+ * @param inArray 	- array of Control Points
+ * @param outArray 	- array to store result of de Casteljau for t
+ * @param size 		- size of Control Points array
+ */
 void deCasteljau(float t, float inArray[MaxNumPts][3], float outArray[3], int size) {
 
 	float TempPointArray[MaxNumPts][3];
@@ -233,6 +272,14 @@ void deCasteljau(float t, float inArray[MaxNumPts][3], float outArray[3], int si
 	outArray[2] = TempPointArray[0][2];
 } 
 
+/*
+ * de Casteljau algorithm to compute intermediate CPs for Adaptive Subdivision
+ * @param t			- parameter value 
+ * @param inArray 	- array of Control Points
+ * @param outArray 	- array to store first half of intermediate result of de Casteljau
+ * @param outArray 	- array to store second half of intermediate result of de Casteljau
+ * @param size 		- size of Control Points array
+ */
 void deCasteljauASCP(float t, float inArray[MaxNumPts][3], float outArray1[MaxNumPts][3], float outArray2[MaxNumPts][3], int size) {
 
 	float TempPointArray[MaxNumPts][3];
@@ -275,6 +322,12 @@ void deCasteljauASCP(float t, float inArray[MaxNumPts][3], float outArray1[MaxNu
 	}
 } 
 
+/*
+ * flat test algorithm
+ * @param tempArray	- parameter value 
+ * @param size 		- size of Control Points array
+ * @result bool		- true: pointLineDistance < Tolerance for each CP || false if at least 1 pointLineDistance is > Tolerance
+ */
 bool flatTest( float tempArray[MaxNumPts][3], int size) {
 
 	glm::vec3 start, end;
@@ -304,6 +357,11 @@ bool flatTest( float tempArray[MaxNumPts][3], int size) {
 	return true;
 }
 
+/*
+ * Adaptive Subdivision algorithm
+ * @param tempArray	- array of Control Points
+ * @param size 		- size of Control Points array
+ */
 void adaptiveSubdivision(float tempArray[MaxNumPts][3], int size) {
 
 	if (flatTest(tempArray, size))
