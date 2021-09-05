@@ -6,24 +6,30 @@
 #include <GL/glew.h>
 #include <GL/freeglut.h>
 
+#include <vector>
 #include "utils.h"
 
 static unsigned int programId, programId_1;
 
-unsigned int VAO, VAO_CIELO, VAO_NEMICO;
-unsigned int VBO, VBO_C, VBO_N, loc, MatProj, MatModel, MatProj1, MatModel1;
+unsigned int VAO, VAO_CIELO, VAO_NEMICO, VAO_PROJ;
+unsigned int VBO, VBO_C, VBO_N, VBO_P, VBO_SP, loc, MatProj, MatModel, MatProj1, MatModel1;
+// Viewport size
+int width = 1280;
+int height = 720;
 
 int NumeroColpiti = 0;
 glm::mat4 Projection;  //Matrice di proiezione
 glm::mat4 Model; //Matrice per il cambiamento di sistema di riferimento: da Sistema diriferimento dell'oggetto a sistema di riferimento nel Mondo
 
-float dxnemici = 0;
-float dynemici = 0;
+float dxnemici = 20.0f;
+float dynemici = 20.0f;
 float posxN, posyN;
 int nemici_per_riga = 5;
 int numero_di_righe = 3;
+float passo_Nemici = ((float)width) / nemici_per_riga;
+float passo_righe = 150.0f;
 
-int nVertices_Navicella = 12 * nTriangles + 1;
+int nVertices_Navicella = 12 * nTriangles;
 
 int nvBocca = 5;
 int nvTentacoli = 16;
@@ -32,16 +38,14 @@ int nVertices_Nemico = 3 * nTriangles + 2* 3 * nTriangles + nvBocca + nvTentacol
 
 math_utils::Point* Navicella = new math_utils::Point[nVertices_Navicella];
 math_utils::Point* Nemico = new math_utils::Point[nVertices_Nemico];
+math_utils::Point* Projectiles = new math_utils::Point[7];
 
 int vertices_cielo = 6;
 math_utils::Point* Cielo = new math_utils::Point[vertices_cielo];
 
-// Viewport size
-int width = 1280;
-int height = 720;
-
 float t;
-float posx_Proiettile = 0, posy_Proiettile = 0;
+std::vector<math_utils::Point> pos_projectiles;
+std::vector<math_utils::Point> pos_strong_projectiles;
 
 //ANIMARE V
 double VelocitaOrizzontale = 0; //velocita orizzontale (pixel per frame)
@@ -55,8 +59,10 @@ float angolo = 0;
 bool pressing_left = false;
 bool pressing_right = false;
 bool pressing_attack = false;
+bool pressing_strong_attack = false;
 bool pressing_rotate_s = false;
 bool pressing_rotate_d = false;
+
 
 bool** colpito;
 float angoloV = 0;

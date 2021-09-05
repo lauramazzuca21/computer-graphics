@@ -25,21 +25,31 @@ void update(int a)
 	glutPostRedisplay();
 	glutTimerFunc(50, update, 0);
 }
+
 void updateProiettile(int value)
 {
-	//Ascissa del proiettile durante lo sparo
-	posx_Proiettile = 0;
-	//Ordinata del proettile durante lo sparo
-	posy_Proiettile++;
+	glutTimerFunc(5, updateProiettile, 0);
 
-	//L'animazione deve avvenire finch�  l'ordinata del proiettile raggiunge un certo valore fissato
-	if (posy_Proiettile <= 500)
-		glutTimerFunc(5, updateProiettile, 0);
-	else
-		posy_Proiettile = 0;
+	if (pos_projectiles.size() == 0 && pos_strong_projectiles.size() == 0)
+		return;
 
+	std::vector<int> to_remove;
+	for (int i = 0; i < pos_projectiles.size(); i++)
+	{
+		pos_projectiles.at(i).y++;
+		if (pos_projectiles.at(i).y >= height)
+			pos_projectiles.erase(pos_projectiles.begin(),pos_projectiles.begin()+i);
+	}
+
+	for (int i = 0; i < pos_strong_projectiles.size(); i++)
+	{
+		pos_strong_projectiles.at(i).y++;
+		if (pos_strong_projectiles.at(i).y > height)
+			pos_strong_projectiles.erase(pos_strong_projectiles.begin(),pos_strong_projectiles.begin()+i);
+	}
 	glutPostRedisplay();
 }
+
 void updateV(int a)
 {
 	bool moving = false;
@@ -109,13 +119,25 @@ void updateV(int a)
 	glutTimerFunc(15, updateV, 0);
 }
 
+void fire() {
+
+	if (pressing_strong_attack && pos_strong_projectiles.size() < 3)
+	{
+		pos_strong_projectiles.push_back(math_utils::Point(posx, posy, 0.0f));
+	}
+	else if (pressing_attack && pos_projectiles.size() < 10)
+	{
+		pos_projectiles.push_back(math_utils::Point(posx, posy, 0.0f));
+	}
+}
+
 void keyboardPressedEvent(unsigned char key, int x, int y)
 {
 	switch (key)
 	{
 	case ' ':
 		pressing_attack = true;
-		updateProiettile(0);
+		fire();
 		break;
 	case 'a':
 		pressing_left = true;
@@ -128,6 +150,9 @@ void keyboardPressedEvent(unsigned char key, int x, int y)
 		break;
 	case 'f':
 		pressing_rotate_d = true;
+		break;
+	case 'q': 
+		pressing_strong_attack = true;
 		break;
 	case 27:
 		exit(0);
@@ -156,12 +181,15 @@ void keyboardReleasedEvent(unsigned char key, int x, int y)
 	case 'f':
 		pressing_rotate_d = false;
 		break;
+	case 'q':
+		pressing_strong_attack = false;
+		break;
 	default:
 		break;
 	}
 }
 
-/**************DRAW CHARACTERS**************/
+/**************DRAW SCENE OBJECTS**************/
 void disegna_tentacoli(math_utils::Point* Punti, glm::vec4 color_top, glm::vec4 color_bot)
 {
 	float alfa = 2.0f, step=PI/4;
@@ -187,7 +215,7 @@ void disegna_tentacoli(math_utils::Point* Punti, glm::vec4 color_top, glm::vec4 
 		PSpike[i] = PEnd;
 	}
 
-	for (int i = 0; i < 8 ;i++)//  per ciascuno degli 8 tentacoli
+	for (int i = 0; i < 8 ;i++)// for each tentacle draw the "pon pon"
 	{
 		//draw spikes
 		draw_utils::disegna_cerchio(PSpike[i].x, PSpike[i].y, 0.25, 0.25, colors::lincoln_green, colors::maximum_green, Spike);
@@ -253,7 +281,6 @@ void disegna_Navicella(glm::vec4 color_top_Navicella, glm::vec4 color_bot_Navice
 		Navicella[i + cont] = Corpo[i];
 	}
 
-
 	//Costruisci Corpo 3
 	draw_utils::disegna_cerchio(-1.0, -1.0, 0.5, 0.5, color_top_Oblo, color_bot_Oblo, Corpo);
 
@@ -262,17 +289,17 @@ void disegna_Navicella(glm::vec4 color_top_Navicella, glm::vec4 color_bot_Navice
 	{
 		Navicella[i + cont] = Corpo[i];
 	}
+}
 
-	cont = 12 * nTriangles;
+void draw_projectile() {
+	Projectiles[0] = math_utils::Point(0.0f, 0.0f, 0.0f, 1.0f, 1.0f, 1.0f, 1.0f);
+}
 
-//Proiettile
-	Navicella[cont].x = 0.0f;
-	Navicella[cont].y = 0.0f;
-	Navicella[cont].z = 0.0f;
-	Navicella[cont].r = 1.0f;
-	Navicella[cont].g = 1.0f;
-	Navicella[cont].b = 1.0f;
-	Navicella[cont].a = 1.0f;
+void draw_strong_projectile() {
+	math_utils::Point StrongProjectile[6];
+	draw_utils::disegna_piano(0.0f, 0.0f, 8.0f, 32.0f, colors::persian_plum, colors::cinnabar, StrongProjectile);
+	for (int i = 0; i < 6; i++)
+		Projectiles[1+i] = StrongProjectile[i];
 }
 
 void disegna_nemico(glm::vec4 color_top_Nemico, glm::vec4 color_bot_Nemico, glm::vec4 color_top_Occhio, glm::vec4 color_bot_Occhio, math_utils::Point* Nemico)
@@ -373,6 +400,22 @@ void init(void)
 	//Scollego il VAO
 	glBindVertexArray(0);
 	
+	draw_projectile();
+	draw_strong_projectile();
+	//VAO for projectiles
+	glGenVertexArrays(1, &VAO_PROJ);
+	glBindVertexArray(VAO_PROJ);
+	glGenBuffers(1, &VBO_P);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_P);
+	glBufferData(GL_ARRAY_BUFFER, 7*sizeof(math_utils::Point), &Projectiles[0], GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+
+	//Scollego il VAO
+	glBindVertexArray(0);
+
 	//Disegna nemici
 	disegna_nemico(colors::lincoln_green, colors::bianco, colors::nero, colors::bianco, Nemico);
 	//Genero un VAO
@@ -404,11 +447,61 @@ void init(void)
 	glClearColor(1.0, 0.5, 0.0, 1.0);
 
 	Projection = glm::ortho(0.0f, float(width), 0.0f, float(height));
-		MatProj = glGetUniformLocation(programId, "Projection");
-		MatModel = glGetUniformLocation(programId, "Model");
+	MatProj = glGetUniformLocation(programId, "Projection");
+	MatModel = glGetUniformLocation(programId, "Model");
     MatProj1 = glGetUniformLocation(programId_1, "Projection");
 	MatModel1 = glGetUniformLocation(programId_1, "Model");
 	loc = glGetUniformLocation(programId_1, "t");
+}
+
+void checkHitEnemy() {
+			// calcolo virus colpiti
+	for (int i = 0; i < numero_di_righe; i++)
+	{
+		posyN = height - i * passo_righe - 20 + rand() % 20;
+		for (int j = 0; j < nemici_per_riga; j++)
+		{			
+			posxN = j * (passo_Nemici)+passo_Nemici / 2 + rand() % 40;
+
+			for (int k =0, sk = 0; k < pos_projectiles.size() || sk < pos_strong_projectiles.size(); k++, sk++)
+			{
+				if ( k < pos_projectiles.size()
+				&&((pos_projectiles.at(k).x >= posxN - dxnemici) && (pos_projectiles.at(k).x <= posxN + dxnemici)) 
+				&& ((pos_projectiles.at(k).y >= posyN - dynemici) && (pos_projectiles.at(k).y <= posyN + dynemici))
+				&& !colpito[i][j])
+				{
+						NumeroColpiti++;
+						colpito[i][j] = true;
+						pos_projectiles.erase(pos_projectiles.begin(), pos_projectiles.begin()+k);
+				}
+
+				if ( sk < pos_strong_projectiles.size()
+				&&	((pos_strong_projectiles.at(sk).x >= posxN - dxnemici) && (pos_strong_projectiles.at(sk).x <= posxN + dxnemici)) 
+				&& ((pos_strong_projectiles.at(sk).y >= posyN - dynemici) && (pos_strong_projectiles.at(sk).y <= posyN + dynemici))
+				&& !colpito[i][j])
+				{
+						NumeroColpiti++;
+						colpito[i][j] = true;
+						pos_strong_projectiles.erase(pos_strong_projectiles.begin(), pos_strong_projectiles.begin()+sk);
+				}
+			}
+		}
+	}
+}
+
+void updateDrawEnemy() {
+	Model = glm::mat4(1.0);
+	Model = glm::translate(Model, glm::vec3(posxN + dxnemici, posyN + dynemici, 0));
+	Model = scale(Model, glm::vec3(30.0, 30.0, 1.0));
+	Model = glm::rotate(Model, glm::radians(angolo), glm::vec3(0.0, 0.0, 1.0));
+	glUniformMatrix4fv(MatModel1, 1, GL_FALSE, value_ptr(Model));
+	// faccia e occhi
+	glDrawArrays(GL_TRIANGLES, 0, nVertices_Nemico - nvBocca - nvTentacoli - nvSpikes);
+	glLineWidth(3.0);  // bocca
+	glDrawArrays(GL_LINE_STRIP, nVertices_Nemico - nvBocca - nvTentacoli - nvSpikes, nvBocca);
+	glLineWidth(8.0); // tentacoli
+	glDrawArrays(GL_LINES, nVertices_Nemico - nvTentacoli - nvSpikes, nvTentacoli);
+	glDrawArrays(GL_TRIANGLES, nVertices_Nemico - nvSpikes, nvSpikes);
 }
 
 void drawScene(void)
@@ -425,32 +518,22 @@ void drawScene(void)
 	glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Model));
 	glDrawArrays(GL_TRIANGLES, 0, vertices_cielo);
 	glBindVertexArray(0);
-	
-	//Disegno il proiettile
-	glBindVertexArray(VAO);
-	glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
-	glPointSize(8.0);
-	Model = glm::mat4(1.0);
-	Model = glm::translate(Model, glm::vec3(posx + posx_Proiettile, posy + posy_Proiettile, 0));
-	glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Model));
-	glDrawArrays(GL_POINTS, nVertices_Navicella - 1, 1);
+
 
 	//Disegno Navicella
+	glBindVertexArray(VAO);
 	Model = glm::mat4(1.0);
 	Model = glm::translate(Model, glm::vec3(posx, posy, 0.0));
 	Model = scale(Model, glm::vec3(80.0, 40.0, 1.0));
 	Model = glm::rotate(Model, glm::radians(angolo), glm::vec3(0.0, 0.0, 1.0));
 	glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Model));
-	glDrawArrays(GL_TRIANGLES, 0, nVertices_Navicella - 1);
+	glDrawArrays(GL_TRIANGLES, 0, nVertices_Navicella);
 	glBindVertexArray(0);
 	
-	// glUseProgram(programId_1); // attiva  fragment shader_1 solo per il nemico
-	// glUniform1f(loc, t);
+	checkHitEnemy();
 
 	// Disegna nemici VIRUS
 	glBindVertexArray(VAO_NEMICO);
-	float passo_Nemici = ((float)width) / nemici_per_riga;
-	float passo_righe = 150;
 	for (int i = 0; i < numero_di_righe; i++)
 	{
 		posyN = height - i * passo_righe - 20;
@@ -458,43 +541,34 @@ void drawScene(void)
 		{
 			posxN = j * (passo_Nemici)+passo_Nemici / 2;
 			if (!colpito[i][j]) {
-				Model = glm::mat4(1.0);
-				Model = glm::translate(Model, glm::vec3(posxN + dxnemici, posyN + dynemici, 0));
-				Model = scale(Model, glm::vec3(30.0, 30.0, 1.0));
-				Model = glm::rotate(Model, glm::radians(angolo), glm::vec3(0.0, 0.0, 1.0));
-				glUniformMatrix4fv(MatModel1, 1, GL_FALSE, value_ptr(Model));
-				// faccia e occhi
-				glDrawArrays(GL_TRIANGLES, 0, nVertices_Nemico - nvBocca - nvTentacoli - nvSpikes);
-				glLineWidth(3.0);  // bocca
-				glDrawArrays(GL_LINE_STRIP, nVertices_Nemico - nvBocca - nvTentacoli - nvSpikes, nvBocca);
-				glLineWidth(8.0); // tentacoli
-				glDrawArrays(GL_LINES, nVertices_Nemico - nvTentacoli - nvSpikes, nvTentacoli);
-				glDrawArrays(GL_TRIANGLES, nVertices_Nemico - nvSpikes, nvSpikes);
+				updateDrawEnemy();
 			}
 		}
 	}
 	glBindVertexArray(0);
-	
-	// calcolo virus colpiti
-	for (int i = 0; i < numero_di_righe; i++)
+
+		//Disegno il proiettile
+	glBindVertexArray(VAO_PROJ);
+
+	for (auto p : pos_projectiles)
 	{
-		posyN = height - i * passo_righe - 20 + rand() % 20;
-		for (int j = 0; j < nemici_per_riga; j++)
-		{
-			posxN = j * (passo_Nemici)+passo_Nemici / 2 + rand() % 40;
-			//	printf("Posizione del proiettile: x= %f y=%f \n", posx + posx_Proiettile, posy + posy_Proiettile);
-			//	printf("BB nemico %d %d : xmin= %f ymin=%f  xmax=%f ymax=%f \n", i,j, posxN - 50 , posyN-50, + posx_Proiettile, posy + posy_Proiettile);
-			if (((posx + posx_Proiettile >= posxN + dxnemici - 10) && (posx + posx_Proiettile <= posxN + dxnemici + 10)) && ((posy + posy_Proiettile >= posyN + dynemici - 10) && (posy + posy_Proiettile <= posyN + dynemici + 10)))
-			{
-				if (!colpito[i][j])
-				{
-					NumeroColpiti++;
-					printf("Numero colpiti %d \n", NumeroColpiti);
-					colpito[i][j] = true;
-				}
-			}
-		}
+		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
+		glPointSize(8.0);
+		Model = glm::mat4(1.0);
+		Model = glm::translate(Model, glm::vec3(p.x, p.y, 0));
+		glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Model));
+		glDrawArrays(GL_POINTS, 0, 1);
 	}
+
+	for (auto p : pos_strong_projectiles)
+	{
+		Model = glm::mat4(1.0);
+		Model = glm::translate(Model, glm::vec3(p.x, p.y, 0));
+		glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Model));
+		glDrawArrays(GL_TRIANGLES, 1, 6);
+	}
+	glBindVertexArray(0);
+	
 	glutSwapBuffers();
 }
 
@@ -518,7 +592,7 @@ int main(int argc, char* argv[])
 	glutKeyboardUpFunc(keyboardReleasedEvent);
 	glutTimerFunc(500, update, 0);
 	glutTimerFunc(500, updateV, 0);
-
+	glutTimerFunc(5, updateProiettile, 0);
 	glutTimerFunc(500, updateNemici, 0);
 	glewExperimental = GL_TRUE;
 	glewInit();

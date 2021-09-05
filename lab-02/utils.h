@@ -4,23 +4,31 @@
 #define PI 3.14159265358979323846
 
 namespace colors {
-    static const glm::vec4 top = {1.0,1.0,1.0, 0.8};
-    static const glm::vec4 bianco = { 1.0,1.0,1.0, 1.0 };
-    static const glm::vec4 nero = { 0.0,0.0,0.0, 1.0 };
-    static const glm::vec4 maximum_green = { 83.0/255.0,141.0/255.0,34.0/255.0, 1.0 };
-    static const glm::vec4 lincoln_green = { 36.0/255.0,85.0/255.0,1.0/255.0, 1.0 };
-    static const glm::vec4 top_Navicella = { 1.0,1.5,0.0,1.0 };
-    static const glm::vec4 bot_Navicella = { 1.0,0.8,0.8,0.5 };
-    static const glm::vec4 top_Corpo     = { 0.0,0.5,0.8,1.0 };
-    static const glm::vec4 bot_Corpo     = { 0.0,0.2,0.5,1.0 };
-    static const glm::vec4 top_Oblo      = { 0.2,0.9,0.1,1.0 };
-    static const glm::vec4 bot_Oblo      = { 0.0,0.2,0.8,1.0 };
+    static const glm::vec4 top 				= {1.0,1.0,1.0, 0.8};
+    static const glm::vec4 bianco 			= { 1.0,1.0,1.0, 1.0 };
+    static const glm::vec4 nero 			= { 0.0,0.0,0.0, 1.0 };
+    static const glm::vec4 maximum_green 	= { 83.0/255.0,141.0/255.0,34.0/255.0, 1.0 };
+    static const glm::vec4 lincoln_green 	= { 36.0/255.0,85.0/255.0,1.0/255.0, 1.0 };
+    static const glm::vec4 persian_plum 	= { 107.0/255.0,29.0/255.0,25.0/255.0, 1.0 };
+    static const glm::vec4 cinnabar 		= { 219.0/255.0,78.0/255.0,70.0/255.0, 1.0 };
+    static const glm::vec4 top_Navicella 	= { 1.0,1.5,0.0,1.0 };
+    static const glm::vec4 bot_Navicella 	= { 1.0,0.8,0.8,0.5 };
+    static const glm::vec4 top_Corpo     	= { 0.0,0.5,0.8,1.0 };
+    static const glm::vec4 bot_Corpo     	= { 0.0,0.2,0.5,1.0 };
+    static const glm::vec4 top_Oblo      	= { 0.2,0.9,0.1,1.0 };
+    static const glm::vec4 bot_Oblo      	= { 0.0,0.2,0.8,1.0 };
 }
 
 namespace math_utils {
 
     struct Point{ 
 	float x, y, z, r, g, b, a; 
+	
+	Point() {}
+
+	Point(float x, float y, float z, float r = 0.0f, float g = 0.0f, float b = 0.0f, float a = 0.0f) 
+	: x(x), y(y), z(z), r(r), g(g), b(b), a(a) 
+	{}  
 
     Point& operator =(const Point& p)
     {
