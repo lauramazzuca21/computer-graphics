@@ -54,6 +54,9 @@ typedef struct {
 	GLfloat shininess;
 } Material;
 
+constexpr float WAVE_FREQUENCY = 0.00001f;
+constexpr float WAVE_HEIGHT_SCALE = 0.1f;
+
 typedef enum { // used also as index, don't modify order
 	GOURAUD,
 	PHONG,
@@ -85,7 +88,10 @@ typedef struct {
 	GLuint P_Matrix_pointer;
 	GLuint V_Matrix_pointer;
 	GLuint M_Matrix_pointer;
+	GLuint MVP_Matrix_Pointer;
 	GLfloat time_delta_pointer;
+	GLfloat frequency_pointer;
+	GLfloat height_scale_pointer;
 } BaseShaderUniform;
 
 const string MeshDir = "Mesh/";
