@@ -2,6 +2,12 @@
 // ================
 #version 450 core
 
+in vec3 L;
+in vec3 E;
+in vec3 N;
+
+out vec4 fragColor;
+
 void main()
 {
     vec4 a = vec4(0.0,0.5,0.8,1.0);

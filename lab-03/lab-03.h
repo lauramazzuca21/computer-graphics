@@ -117,12 +117,14 @@ static point_light light;
 
 /*camera structures*/
 constexpr float CAMERA_ZOOM_SPEED = 0.1f;
-constexpr float CAMERA_TRASLATION_SPEED = 0.01f;
+constexpr float CAMERA_TRASLATION_SPEED_V = 0.01f;
+constexpr float CAMERA_TRASLATION_SPEED_H = 0.1f;
 
 struct {
-	glm::vec4 position;
-	glm::vec4 target;
-	glm::vec4 upVector;
+	glm::vec4 position = glm::vec4(10.0, 10.0, 10.0, 0.0);
+	glm::vec4 target = glm::vec4(0.0, 0.0, 0.0, 0.0);
+	glm::vec4 upVector = glm::vec4(0.0, 1.0, 0.0, 0.0);
+	glm::vec4 rightVector = glm::vec4(1.0, 0.0, 0.0, 0.0);
 } ViewSetup;
 
 struct {
