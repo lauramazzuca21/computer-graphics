@@ -9,6 +9,7 @@ layout (location = 1) in vec3 aNormal;
 out vec3 E;
 out vec3 N;
 out vec3 L;
+out vec3 Color;
 
 // Values that stay constant for the whole mesh.
 uniform mat4 P;
@@ -22,6 +23,14 @@ struct PointLight{
  };
 uniform PointLight light;
 
+struct Material {
+    vec3 ambient;
+    vec3 diffuse;
+    vec3 specular;
+    float shininess;
+}; 
+uniform Material material;
+
 void main()
 {
     gl_Position = P * V * M * vec4(aPos, 1.0);
@@ -34,4 +43,10 @@ void main()
 	E = normalize(-eyePosition.xyz);
 	L = normalize((eyeLightPos - eyePosition).xyz);
 	N = normalize(transpose(inverse(mat3(V * M))) * aNormal);
+
+    // diffuse 
+    float diff = max(dot(L,N), 0.0);
+    vec3 diffuse = light.power * light.color * diff * material.diffuse;
+
+    Color = diffuse;
 }   

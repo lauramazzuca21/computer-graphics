@@ -21,6 +21,7 @@ Given the Lab01 setup, modify it to:
 ## Lab 03 - 3D Polygonal Meshes Scene Control
 Given the Lab03 setup, modify it to:
 - [x] compute and store normal vectors of polygonal meshes' vertex
+- [x] create a new material
 - [x] create Wave Motion in ```v_wave.glsl``` vertex shader
 - [x] create Toon Shading in ```v_toon.glsl``` and ```f_toon.glsl```
 - [x] add pan horizontal camera navigation (CTRL + mouse wheel up/down)

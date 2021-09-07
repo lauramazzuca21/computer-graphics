@@ -224,6 +224,10 @@ void initShader()
 	light_unif.light_position_pointer = glGetUniformLocation(shaders_IDs[TOON], "light.position");
 	light_unif.light_color_pointer = glGetUniformLocation(shaders_IDs[TOON], "light.color");
 	light_unif.light_power_pointer = glGetUniformLocation(shaders_IDs[TOON], "light.power");
+	light_unif.material_ambient = glGetUniformLocation(shaders_IDs[TOON], "material.ambient");
+	light_unif.material_diffuse = glGetUniformLocation(shaders_IDs[TOON], "material.diffuse");
+	light_unif.material_specular = glGetUniformLocation(shaders_IDs[TOON], "material.specular");
+	light_unif.material_shininess = glGetUniformLocation(shaders_IDs[TOON], "material.shininess");
 	light_uniforms[ShadingType::TOON] = light_unif;
 	//Rendiamo attivo lo shader
 	glUseProgram(shaders_IDs[TOON]);
@@ -256,7 +260,7 @@ void init() {
 	light.power = 1.f;
 
 	// Materials setup
-	materials.resize(5);
+	materials.resize(6);
 	materials[MaterialType::RED_PLASTIC].name = "Red Plastic";
 	materials[MaterialType::RED_PLASTIC].ambient = red_plastic_ambient;
 	materials[MaterialType::RED_PLASTIC].diffuse = red_plastic_diffuse;
@@ -280,6 +284,12 @@ void init() {
 	materials[MaterialType::SLATE].diffuse = slate_diffuse;
 	materials[MaterialType::SLATE].specular = slate_specular;
 	materials[MaterialType::SLATE].shininess = slate_shininess;
+
+	materials[MaterialType::YELLOW_RUBBER].name = "Yellow Rubber";
+	materials[MaterialType::YELLOW_RUBBER].ambient = yellow_rubber_ambient;
+	materials[MaterialType::YELLOW_RUBBER].diffuse = yellow_rubber_diffuse;
+	materials[MaterialType::YELLOW_RUBBER].specular = yellow_rubber_specular;
+	materials[MaterialType::YELLOW_RUBBER].shininess = yellow_rubber_shininess;
 
 	materials[MaterialType::NO_MATERIAL].name = "NO_MATERIAL";
 	materials[MaterialType::NO_MATERIAL].ambient = glm::vec3(1, 1, 1);
@@ -368,6 +378,10 @@ void drawScene() {
 			// Caricamento matrice trasformazione del modello
 			glUniform3f(light_uniforms[TOON].light_position_pointer, light.position.x, light.position.y, light.position.z);
 			glUniformMatrix4fv(base_uniforms[TOON].M_Matrix_pointer, 1, GL_FALSE, value_ptr(objects[i].M));
+			glUniform3fv(light_uniforms[TOON].material_ambient, 1, glm::value_ptr(materials[objects[i].material].ambient));
+			glUniform3fv(light_uniforms[TOON].material_diffuse, 1, glm::value_ptr(materials[objects[i].material].diffuse));
+			glUniform3fv(light_uniforms[TOON].material_specular, 1, glm::value_ptr(materials[objects[i].material].specular));
+			glUniform1f(light_uniforms[TOON].material_shininess, materials[objects[i].material].shininess);
 			break;
 		case ShadingType::PASS_THROUGH:
 			glUseProgram(shaders_IDs[PASS_THROUGH]);
@@ -636,6 +650,7 @@ void buildOpenGLMenu()
 	glutAddMenuEntry(materials[MaterialType::EMERALD].name.c_str(), MaterialType::EMERALD);
 	glutAddMenuEntry(materials[MaterialType::BRASS].name.c_str(), MaterialType::BRASS);
 	glutAddMenuEntry(materials[MaterialType::SLATE].name.c_str(), MaterialType::SLATE);
+	glutAddMenuEntry(materials[MaterialType::YELLOW_RUBBER].name.c_str(), MaterialType::YELLOW_RUBBER);
 
 	glutCreateMenu(main_menu_func); // richiama main_menu_func() alla selezione di una voce menu
 	glutAddMenuEntry("Opzioni", -1); //-1 significa che non si vuole gestire questa riga
