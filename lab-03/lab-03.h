@@ -124,7 +124,6 @@ struct {
 	glm::vec4 position = glm::vec4(10.0, 10.0, 10.0, 0.0);
 	glm::vec4 target = glm::vec4(0.0, 0.0, 0.0, 0.0);
 	glm::vec4 upVector = glm::vec4(0.0, 1.0, 0.0, 0.0);
-	glm::vec4 rightVector = glm::vec4(1.0, 0.0, 0.0, 0.0);
 } ViewSetup;
 
 struct {

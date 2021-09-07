@@ -20,17 +20,12 @@ Given the Lab01 setup, modify it to:
 
 ## Lab 03 - 3D Polygonal Meshes Scene Control
 Given the Lab03 setup, modify it to:
-- [ ] compute and store normal vectors of polygonal meshes' vertex
-- [ ] create a new material
+- [x] compute and store normal vectors of polygonal meshes' vertex
 - [x] create Wave Motion in ```v_wave.glsl``` vertex shader
-- [ ] create Toon Shading in ```v_toon.glsl``` and ```f_toon.glsl```
-- [ ] add pan horizontal camera navigation
-- [ ] add single object selection throught left/right arrows
-- [ ] enable transformations (rotate - r key, scale - s key, translate - g key) for single objects in the scene...
-- [ ] wrt either WCS or OCS (pop-up menu to choose which one)
-- [ ] enable axis choice on keyboard
-- [ ] enable translation of Light object
-- [ ] wheel up/down to increase/decrease transformation
+- [x] create Toon Shading in ```v_toon.glsl``` and ```f_toon.glsl```
+- [x] add pan horizontal camera navigation (CTRL + mouse wheel up/down)
+- [x] enable transformations (rotate - r key, scale - s key, translate - g key) for single objects in the scene wrt either WCS or OCS (pop-up menu to choose which one)
+- [x] enable translation of Light object
 
 ## Lab 04 - 
 - [ ] 

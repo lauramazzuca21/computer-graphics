@@ -335,6 +335,7 @@ void drawScene() {
 			// Caricamento matrice trasformazione del modello
 			glUniformMatrix4fv(base_uniforms[GOURAUD].M_Matrix_pointer, 1, GL_FALSE, value_ptr(objects[i].M));
 			//Material loading
+			glUniform3f(light_uniforms[GOURAUD].light_position_pointer, light.position.x, light.position.y, light.position.z);
 			glUniform3fv(light_uniforms[GOURAUD].material_ambient, 1, glm::value_ptr(materials[objects[i].material].ambient));
 			glUniform3fv(light_uniforms[GOURAUD].material_diffuse, 1, glm::value_ptr(materials[objects[i].material].diffuse));
 			glUniform3fv(light_uniforms[GOURAUD].material_specular, 1, glm::value_ptr(materials[objects[i].material].specular));
@@ -345,6 +346,7 @@ void drawScene() {
 			// Caricamento matrice trasformazione del modello
 			glUniformMatrix4fv(base_uniforms[PHONG].M_Matrix_pointer, 1, GL_FALSE, value_ptr(objects[i].M));
 			//Material loading
+			glUniform3f(light_uniforms[PHONG].light_position_pointer, light.position.x, light.position.y, light.position.z);
 			glUniform3fv(light_uniforms[PHONG].material_ambient, 1, glm::value_ptr(materials[objects[i].material].ambient));
 			glUniform3fv(light_uniforms[PHONG].material_diffuse, 1, glm::value_ptr(materials[objects[i].material].diffuse));
 			glUniform3fv(light_uniforms[PHONG].material_specular, 1, glm::value_ptr(materials[objects[i].material].specular));
@@ -355,6 +357,7 @@ void drawScene() {
 			// Caricamento matrice trasformazione del modello
 			glUniformMatrix4fv(base_uniforms[BLINN].M_Matrix_pointer, 1, GL_FALSE, value_ptr(objects[i].M));
 			//Material loading
+			glUniform3f(light_uniforms[BLINN].light_position_pointer, light.position.x, light.position.y, light.position.z);
 			glUniform3fv(light_uniforms[BLINN].material_ambient, 1, glm::value_ptr(materials[objects[i].material].ambient));
 			glUniform3fv(light_uniforms[BLINN].material_diffuse, 1, glm::value_ptr(materials[objects[i].material].diffuse));
 			glUniform3fv(light_uniforms[BLINN].material_specular, 1, glm::value_ptr(materials[objects[i].material].specular));
@@ -363,6 +366,7 @@ void drawScene() {
 		case ShadingType::TOON:
 			glUseProgram(shaders_IDs[TOON]);
 			// Caricamento matrice trasformazione del modello
+			glUniform3f(light_uniforms[TOON].light_position_pointer, light.position.x, light.position.y, light.position.z);
 			glUniformMatrix4fv(base_uniforms[TOON].M_Matrix_pointer, 1, GL_FALSE, value_ptr(objects[i].M));
 			break;
 		case ShadingType::PASS_THROUGH:
@@ -378,7 +382,7 @@ void drawScene() {
 			glUniform1f(base_uniforms[WAVE].time_delta_pointer, clock());
 			glUniform1f(base_uniforms[WAVE].height_scale_pointer, WAVE_HEIGHT_SCALE);
 			glUniform1f(base_uniforms[WAVE].frequency_pointer, WAVE_FREQUENCY);
-
+			glUniform3f(light_uniforms[WAVE].light_position_pointer, light.position.x, light.position.y, light.position.z);
 			glUniform3fv(light_uniforms[WAVE].material_ambient, 1, glm::value_ptr(materials[objects[i].material].ambient));
 			glUniform3fv(light_uniforms[WAVE].material_diffuse, 1, glm::value_ptr(materials[objects[i].material].diffuse));
 			glUniform3fv(light_uniforms[WAVE].material_specular, 1, glm::value_ptr(materials[objects[i].material].specular));
@@ -709,9 +713,41 @@ void moveCameraDown()
 	ViewSetup.target += glm::vec4(upDirection, 0.0);
 }
 
+//rotation vector gives me the axis
 void modifyModelMatrix(glm::vec3 translation_vector, glm::vec3 rotation_vector, GLfloat angle, GLfloat scale_factor)
 {
+	Object& current = objects.at(selected_obj);
+	switch (TransformMode)
+	{
+	case OCS:
+	{
+		//since there can only be one modification at the time of the model, the model matrix is always multiplied by all of the transformations matrices
+		//this way we don't need to check which one is currently happening
+		current.M *= glm::rotate(glm::mat4(1.0f), angle, rotation_vector);
+		current.M *= glm::scale(glm::mat4(1.0f), glm::vec3(scale_factor));
+		current.M *= glm::translate(glm::mat4(1.0f), translation_vector);
+	}
+		break;
+	case WCS:
+	{
+		glm::mat4 currentM = glm::mat4(current.M);
+		glm::mat4 inverseAxisM = glm::inverse(current.M);
+		//transform my object Model matrix in world basis which is I=MM^-1
+		current.M *= inverseAxisM;
+		//make modifications
+		current.M *= glm::rotate(glm::mat4(1.0f), angle, rotation_vector);
+		current.M *= glm::scale(glm::mat4(1.0f), glm::vec3(scale_factor));
+		current.M *= glm::translate(glm::mat4(1.0f), translation_vector);
+		//transform coord system back to OCS
+		current.M *= currentM;
+	}
+		break;
+	default:
+		break;
+	}
 
+	if (current.name == "light")
+		light.position = current.M[3];
 }
 
 void generate_and_load_buffers(bool generate, Mesh* mesh)
