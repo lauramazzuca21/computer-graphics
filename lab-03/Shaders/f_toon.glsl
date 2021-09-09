@@ -12,7 +12,7 @@ out vec4 fragColor;
 
 void main()
 {
-    vec4 finalColor = vec4(Color, 1.0);
+    vec3 finalColor = Color;
 
     float intensity = dot(normalize(L),normalize(N));
     if (intensity > 0.95)
@@ -25,10 +25,8 @@ void main()
         finalColor *=0.5;
     else if (intensity > 0.05)
         finalColor *=0.25;
+    else
+        finalColor *=0.0; //black
 
-    float aa = dot(normalize(E), normalize(N));
-    if(aa >= 0.0 && aa < 0.30)
-        finalColor = vec4(0.0, 0.0, 0.0, 1.0); //black
-
-    fragColor = finalColor;
+    fragColor = vec4(finalColor, 1.0);
 }

@@ -106,7 +106,7 @@ glm::vec3 red_plastic_ambient = { 0.1, 0.0, 0.0 }, red_plastic_diffuse = { 0.6, 
 glm::vec3 brass_ambient = { 0.1, 0.06, 0.015 }, brass_diffuse = { 0.78, 0.57, 0.11 }, brass_specular = { 0.99, 0.91, 0.81 }; GLfloat brass_shininess = 27.8f;
 glm::vec3 emerald_ambient = { 0.0215, 0.04745, 0.0215 }, emerald_diffuse = { 0.07568, 0.61424, 0.07568 }, emerald_specular = { 0.633, 0.727811, 0.633 }; GLfloat emerald_shininess = 78.8f;
 glm::vec3 slate_ambient = { 0.02, 0.02, 0.02 }, slate_diffuse = { 0.1, 0.1, 0.1 }, slate_specular{ 0.4, 0.4, 0.4 }; GLfloat slate_shininess = 1.78125f;
-glm::vec3 yellow_rubber_ambient = { 0.05f,0.05f,0.0f }, yellow_rubber_diffuse = { 0.5f,0.5f,0.4f }, yellow_rubber_specular = { 0.7f,0.7f,0.04f }; GLfloat yellow_rubber_shininess = 10.0f;
+glm::vec3 yellow_rubber_ambient = { 0.1f,0.1f,0.015f}, yellow_rubber_diffuse = { 1.0f,1.0f,0.0f }, yellow_rubber_specular = { 0.7f,0.7f,0.04f }; GLfloat yellow_rubber_shininess = 10.0f;
 
 typedef struct {
 	glm::vec3 position;

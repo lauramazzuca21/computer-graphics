@@ -39,14 +39,10 @@ void main()
 	vec4 eyePosition = V * M * vec4(aPos, 1.0);
 	// LightPos in VCS
 	vec4 eyeLightPos = V * vec4(light.position, 1.0);
-	// Compute vectors H,L,N in VCS
+	// Compute vectors E,L,N in VCS
 	E = normalize(-eyePosition.xyz);
 	L = normalize((eyeLightPos - eyePosition).xyz);
 	N = normalize(transpose(inverse(mat3(V * M))) * aNormal);
 
-    // diffuse 
-    float diff = max(dot(L,N), 0.0);
-    vec3 diffuse = light.power * light.color * diff * material.diffuse;
-
-    Color = diffuse;
+    Color = material.diffuse;
 }   
