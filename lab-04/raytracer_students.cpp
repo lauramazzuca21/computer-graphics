@@ -7,6 +7,7 @@
 #include "mesh.h"
 #include "face.h"
 #include "sphere.h"
+#include <glm/glm.hpp>
 
 // casts a single ray through the scene geometry and finds the closest hit
 bool
@@ -66,6 +67,15 @@ RayTracer::CastRay (Ray & ray, Hit & h, bool use_sphere_patches) const
   return answer;
 }
 
+Ray 
+reflectionRay(Ray & ray, Hit & hit, Vec3f point) 
+{
+	//     calcolare ReflectionRay  R=2<n,l>n -l (usando la formula opposta per avere la giusta direzione del raggio)
+	Vec3f direction = ray.getDirection() - 2.0f * hit.getNormal().Dot3(ray.getDirection()) * hit.getNormal();
+	direction.Normalize();
+	return Ray(point, direction);
+}
+
 Vec3f
 RayTracer::TraceRay (Ray & ray, Hit & hit, int bounce_count) const
 {
@@ -86,6 +96,7 @@ RayTracer::TraceRay (Ray & ray, Hit & hit, int bounce_count) const
 
 	assert (m != NULL);
 	Vec3f normal = hit.getNormal ();
+	//get point with which the ray intersected the object
 	Vec3f point = ray.pointAtParameter (hit.getT ());
 
 	// ----------------------------------------------
@@ -98,24 +109,23 @@ RayTracer::TraceRay (Ray & ray, Hit & hit, int bounce_count) const
 	Vec3f reflectiveColor = m->getReflectiveColor ();
 
 	// ==========================================
-	// ASSIGNMENT:  ADD REFLECTIVE LOGIC
+	// REFLECTIVE LOGIC
 	// ==========================================
 	
 	// se (il punto sulla superficie e' riflettente & bounce_count>0)
-    
-	//     calcolare ReflectionRay  R=2<n,l>n -l
-
-    //	   invocare TraceRay(ReflectionRay, hit,bounce_count-1)
-	
-	//     aggiungere ad answer il contributo riflesso
-	
+	//calcolo la norma per vedere quanto è lungo quel vettore. Sarà riflettente solo se length > 0
+    if (reflectiveColor.Length() != 0 && bounce_count > 0)
+	{
+		Ray reflection = reflectionRay(ray, hit, point);
+		answer += TraceRay(reflection, hit, bounce_count - 1) * reflectiveColor;
+	}
 	// ----------------------------------------------
 	// add each light
 	int num_lights = mesh->getLights ().size ();
 	for (int i = 0; i < num_lights; i++)
 	{
 	  // ==========================================
-	  // ASSIGNMENT:  ADD SHADOW LOGIC
+	  // SHADOW LOGIC
 	  // ==========================================
 	  Face *f = mesh->getLights ()[i];
 	  Vec3f pointOnLight = f->computeCentroid ();
@@ -123,18 +133,25 @@ RayTracer::TraceRay (Ray & ray, Hit & hit, int bounce_count) const
 	  dirToLight.Normalize ();
 
       // creare shadow ray verso il punto luce
-	  
+	  Ray shadow = Ray(point, dirToLight);
+	  Hit hitShadowRay = Hit();
 	  // controllare il primo oggetto colpito da tale raggio
-
-	  // se e' la sorgente luminosa i-esima allora
-	  //	calcolare e aggiungere ad answer il contributo luminoso
-	  // altrimenti
-	  //    la luce i non contribuisce alla luminosita' di point.
-
-	  if (normal.Dot3 (dirToLight) > 0)
+	  bool hitObj = CastRay(shadow, hitShadowRay, false);
+	  if (hitObj)
 	  {
-		Vec3f lightColor = 0.2 * f->getMaterial ()->getEmittedColor () * f->getArea ();
-		answer += m->Shade (ray, hit, dirToLight, lightColor, args);
+		//get point with which the ray intersected the object
+		Vec3f p = shadow.pointAtParameter (hitShadowRay.getT ());
+		Vec3f dist = Vec3f();
+		Vec3f::Sub(dist, p, pointOnLight);
+
+	  // se e' la sorgente luminosa i-esima e il dot prod tra normale ed l è > 0 allora
+		if ( dist.Length() < 0.01f && normal.Dot3(dirToLight) > 0)
+		{
+			//	calcolare e aggiungere ad answer il contributo luminoso
+			Vec3f lightColor = 0.2f * f->getMaterial()->getEmittedColor() * f->getArea();
+			// add to answer the contribution of the light found - it will return black (so a shadow) if the light does not contribute
+			answer += m->Shade(ray, hit, dirToLight, lightColor, args);
+		}
 	  }
 	}
     

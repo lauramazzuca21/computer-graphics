@@ -28,8 +28,10 @@ Given the Lab03 setup, modify it to:
 - [x] enable transformations (rotate - r key, scale - s key, translate - g key) for single objects in the scene wrt either WCS or OCS (pop-up menu to choose which one)
 - [x] enable translation of Light object
 
-## Lab 04 - 
-- [ ] 
+## Lab 04 - Raytracing
+Given the Lab04 setup, modify it to:
+- [x] add shadow logic
+- [x] add reflective logic
 
 ## Lab 05 - 
 - [ ] 

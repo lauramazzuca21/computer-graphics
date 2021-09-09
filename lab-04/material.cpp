@@ -39,7 +39,7 @@ Material::Shade (const Ray & ray, const Hit & hit, const Vec3f & dirToLight, con
   float dot_er = e.Dot3 (r);
   if (dot_er < 0.0f)
 	dot_er = 0.0f;
-  answer += lightColor * specularColor * pow (dot_er, exponent) * dot_nl;
+  answer += lightColor * specularColor * pow (dot_er, exponent);// * dot_nl;
 
   return answer;
 

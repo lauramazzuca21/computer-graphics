@@ -392,6 +392,7 @@ GLCanvas::TraceRay (float i, float j)
   float x = (i + 0.5 - args->width / 2.0) / float (max_d) + 0.5;
   float y = (j + 0.5 - args->height / 2.0) / float (max_d) + 0.5;
 
+//generazione raggio primario
   Ray r = camera->generateRay (Vec2f (x, y));
   Hit hit;
   Vec3f color = raytracer->TraceRay (r, hit, args->num_bounces);
