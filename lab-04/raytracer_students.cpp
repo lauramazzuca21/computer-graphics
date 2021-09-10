@@ -124,33 +124,69 @@ RayTracer::TraceRay (Ray & ray, Hit & hit, int bounce_count) const
 	int num_lights = mesh->getLights ().size ();
 	for (int i = 0; i < num_lights; i++)
 	{
-	  // ==========================================
-	  // SHADOW LOGIC
-	  // ==========================================
-	  Face *f = mesh->getLights ()[i];
-	  Vec3f pointOnLight = f->computeCentroid ();
-	  Vec3f dirToLight = pointOnLight - point;
-	  dirToLight.Normalize ();
-
-      // creare shadow ray verso il punto luce
-	  Ray shadow = Ray(point, dirToLight);
-	  Hit hitShadowRay = Hit();
-	  // controllare il primo oggetto colpito da tale raggio
-	  bool hitObj = CastRay(shadow, hitShadowRay, false);
-	  if (hitObj)
+		Face *f = mesh->getLights ()[i];
+	  if(args->softShadow)
 	  {
-		//get point with which the ray intersected the object
-		Vec3f p = shadow.pointAtParameter (hitShadowRay.getT ());
-		Vec3f dist = Vec3f();
-		Vec3f::Sub(dist, p, pointOnLight);
+		// ==========================================
+		// SOFT SHADOW LOGIC
+		// ==========================================
+		for (int k = 0; k < args->num_shadow_samples; k++) {
+			Vec3f pointOnLight = f->RandomPoint();
+			Vec3f dirToLight = pointOnLight - point;
+			dirToLight.Normalize ();
 
-	  // se e' la sorgente luminosa i-esima e il dot prod tra normale ed l è > 0 allora
-		if ( dist.Length() < 0.01f && normal.Dot3(dirToLight) > 0)
+			// creare shadow ray verso il punto luce
+			Ray shadow = Ray(point, dirToLight);
+			Hit hitShadowRay = Hit();
+			// controllare il primo oggetto colpito da tale raggio
+			bool hitObj = CastRay(shadow, hitShadowRay, false);
+			if (hitObj)
+			{
+				//get point with which the ray intersected the object
+				Vec3f p = shadow.pointAtParameter (hitShadowRay.getT ());
+				Vec3f dist = Vec3f();
+				Vec3f::Sub(dist, p, pointOnLight);
+				float intensity = normal.Dot3(dirToLight);
+			// se e' la sorgente luminosa i-esima e il dot prod tra normale ed l è > 0 allora
+				if ( dist.Length() < 0.01f &&  intensity > 0.0f)
+				{
+					//	calcolare e aggiungere ad answer il contributo luminoso
+					Vec3f lightColor =  0.2f * f->getMaterial()->getEmittedColor() * f->getArea();
+					// add to answer the contribution of the light found - it will return black (so a shadow) if the light does not contribute
+					answer += (1.0f/args->num_shadow_samples) * m->Shade(ray, hit, dirToLight, lightColor, args);
+				}
+			}
+		}
+	  }
+	  else
+	  {
+		// ==========================================
+		// HARD SHADOW LOGIC
+		// ==========================================
+		Vec3f pointOnLight = f->computeCentroid ();
+		Vec3f dirToLight = pointOnLight - point;
+		dirToLight.Normalize ();
+
+		// creare shadow ray verso il punto luce
+		Ray shadow = Ray(point, dirToLight);
+		Hit hitShadowRay = Hit();
+		// controllare il primo oggetto colpito da tale raggio
+		bool hitObj = CastRay(shadow, hitShadowRay, false);
+		if (hitObj)
 		{
-			//	calcolare e aggiungere ad answer il contributo luminoso
-			Vec3f lightColor = 0.2f * f->getMaterial()->getEmittedColor() * f->getArea();
-			// add to answer the contribution of the light found - it will return black (so a shadow) if the light does not contribute
-			answer += m->Shade(ray, hit, dirToLight, lightColor, args);
+			//get point with which the ray intersected the object
+			Vec3f p = shadow.pointAtParameter (hitShadowRay.getT ());
+			Vec3f dist = Vec3f();
+			Vec3f::Sub(dist, p, pointOnLight);
+
+		// se e' la sorgente luminosa i-esima e il dot prod tra normale ed l è > 0 allora
+			if ( dist.Length() < 0.01f && normal.Dot3(dirToLight) > 0)
+			{
+				//	calcolare e aggiungere ad answer il contributo luminoso
+				Vec3f lightColor = 0.2f * f->getMaterial()->getEmittedColor() * f->getArea();
+				// add to answer the contribution of the light found - it will return black (so a shadow) if the light does not contribute
+				answer += m->Shade(ray, hit, dirToLight, lightColor, args);
+			}
 		}
 	  }
 	}
