@@ -37,11 +37,11 @@ Given the Lab04 setup, modify it to:
 ## Lab 05 - Blender mesh modeling and Meshlab
 - [x] model a complex object or a scene in Blender
 Use Meshlab for:
-- [ ] mesh object reconstruction from point clouds (Poisson,MLS, Marching cubes)
-- [ ] Fill Hole/Mesh Repair tools
-- [ ] fairing
-- [ ] decimation
-- [ ] quality measure tools for surfaces (curvature)
+- [x] mesh object reconstruction from point clouds (Poisson,MLS, Marching cubes)
+- [x] Fill Hole/Mesh Repair tools
+- [x] fairing
+- [x] decimation
+- [x] quality measure tools for surfaces (curvature)
 
 ## Lab 06 - Blender rendering - Digital Art
 - [ ] render a scene with Blender
