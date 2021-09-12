@@ -31,10 +31,10 @@ Given the Lab03 setup, modify it to:
 ## Lab 04 - Raytracing
 Given the Lab04 setup, modify it to:
 - [x] add hard shadow logic
-- [ ] add soft shadow logic
+- [x] add soft shadow logic
 - [x] add reflective logic
 
-## Lab 05 - 
+## Lab 05 - Blender
 - [ ] 
 
 ## Lab 06 - 
