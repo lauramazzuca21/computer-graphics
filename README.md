@@ -37,7 +37,8 @@ Given the Lab04 setup, modify it to:
 - [x] add reflective logic
 
 ## Lab 05 - Blender mesh modeling and Meshlab
-- [x] model a complex object or a scene in Blender
+- [x] model a complex object or a scene in Blender  
+
 Use Meshlab for:
 - [x] mesh object reconstruction from point clouds (Poisson,MLS, Marching cubes)
 - [x] Fill Hole/Mesh Repair tools
@@ -51,7 +52,7 @@ Use Meshlab for:
 ## Lab 07 - Texture and normal mapping, environmental and refraction
 - [x] texture mapping 2D on the torus
 - [x] texture mapping 2D + Phong shader on the torus
-- [ ] procedural mapping on torus
+- [x] procedural mapping on torus
 - [x] normal mapping
 - [x] environment cube mapping: skybox
 - [x] environment mapping: object reflection

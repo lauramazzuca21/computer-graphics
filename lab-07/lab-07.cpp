@@ -19,50 +19,53 @@ based on the OpenGL Shading Language (GLSL) specifications.
 
 #define _CRT_SECURE_NO_WARNINGS // for fscanf
 #include "lab-07.h"
+# include <cstdint>
+#include <random>
 
-double noise3D(double p[3]) {
-	const std::int32_t X = static_cast<std::int32_t>(std::floor(p[0])) & 255;
-	const std::int32_t Y = static_cast<std::int32_t>(std::floor(p[1])) & 255;
-	const std::int32_t Z = static_cast<std::int32_t>(std::floor(p[2])) & 255;
+# include <numeric>
+std::uint8_t p[512];
 
-	p[0] -= std::floor(p[0]);
-	p[1] -= std::floor(p[1]);
-	p[2] -= std::floor(p[2]);
+void reseed_perlin()
+{
+	std::uint32_t seed = std::default_random_engine::default_seed;
+	for (size_t i = 0; i < 256; ++i)
+	{
+		p[i] = static_cast<std::uint8_t>(i);
+	}
 
-	const double u = fade(p[0]);
-	const double v = fade(p[1]);
-	const double w = fade(p[2]);
+	std::shuffle(p, p + 256, std::default_random_engine(seed));
+
+	for (size_t i = 0; i < 256; ++i)
+	{
+		p[256 + i] = p[i];
+	}
+
+}
+
+double noise3D(double x, double y, double z) {
+	const std::int32_t X = static_cast<std::int32_t>(std::floor(x)) & 255;
+	const std::int32_t Y = static_cast<std::int32_t>(std::floor(y)) & 255;
+	const std::int32_t Z = static_cast<std::int32_t>(std::floor(z)) & 255;
+
+	x -= std::floor(x);
+	y -= std::floor(y);
+	z -= std::floor(z);
+
+	const double u = fade(x);
+	const double v = fade(y);
+	const double w = fade(z);
 
 	const std::int32_t A = p[X] + Y, AA = p[A] + Z, AB = p[A + 1] + Z;
 	const std::int32_t B = p[X + 1] + Y, BA = p[B] + Z, BB = p[B + 1] + Z;
 
-	return lerp(w, lerp(v, lerp(u, grad(p[AA], p[0], p[1], p[2]),
-		grad(p[BA], p[0] - 1, p[1], p[2])),
-		lerp(u, grad(p[AB], p[0], p[1] - 1, p[2]),
-		grad(p[BB], p[0] - 1, p[1] - 1, p[2]))),
-		lerp(v, lerp(u, grad(p[AA + 1], p[0], p[1], p[2] - 1),
-		grad(p[BA + 1], p[0] - 1, p[1], p[2] - 1)),
-		lerp(u, grad(p[AB + 1], p[0], p[1] - 1, p[2] - 1),
-		grad(p[BB + 1], p[0] - 1, p[1] - 1, p[2] - 1))));
-}
-
-double turbolence(double x,double y,double z, double scaleMod, double progression, int octaves)
-{ 
-	int i;
-	double sum = 0;
-	double p[3], scale = 1;
-	p[0] = x; 
-	p[1] = y; 
-	p[2] = z;
-	for (i=0; i<octaves; i++)
-	{ 
-		sum += noise3D(p) / scale;
-		scale *= scaleMod;
-		p[0] *= progression;
-		p[1] *= progression;
-		p[2] *= progression; 
-	}
-	return sum;
+	return lerp(w, lerp(v, lerp(u, grad(p[AA], x, y, z),
+		grad(p[BA], x - 1, y, z)),
+		lerp(u, grad(p[AB], x, y - 1, z),
+		grad(p[BB], x - 1, y - 1, z))),
+		lerp(v, lerp(u, grad(p[AA + 1], x, y, z - 1),
+		grad(p[BA + 1], x - 1, y, z - 1)),
+		lerp(u, grad(p[AB + 1], x, y - 1, z - 1),
+		grad(p[BB + 1], x - 1, y - 1, z - 1))));
 }
 
 void init_light_object() {
@@ -238,17 +241,51 @@ void init_windows() {
 	transparents.push_back(objects.size() - 1);
 }
 
+void compute_torus_procedural_texture(Object * obj) {
+	reseed_perlin();
+	int width = 1024;int height = 1024;
+	const double fx = width / 2.0;
+	const double fy = height / 2.0;
+	GLubyte image[width][height][3];
+	int i, j, c; double t;
+	for (i = 0; i < height; i++) {
+		for (j = 0; j < width; j++) {
+			t = 20 * noise3D(i, j, 0.95) ;
+			image[i][j][0] = (GLubyte)t * 203 + 203;
+			image[i][j][1] = (GLubyte)t * 65 + 65;
+			image[i][j][2] = (GLubyte)t* 84 + 84;
+		}
+	}
+	/////////////////////////////////////////
+	glGenTextures(1, &obj->diffuseTexID);
+	glBindTexture(GL_TEXTURE_2D, obj->diffuseTexID);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+	glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+	glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+	glTexImage2D(GL_TEXTURE_2D,  //the target
+		0, // the mip map level we want to generate
+		GL_RGB, // the format of the texture
+		width, //texture_size, width
+		height, //texture_size, heigth
+		0,  // border, leave 0
+		GL_RGB, // we assume is a RGB color image with 24 bit depth per pixel
+		GL_UNSIGNED_BYTE, // the data type
+		image);
+}
+
 void init_torus() {
 	Mesh torus = {};
 	compute_Torus(&torus);
 	generate_and_load_buffers(true, &torus);
 	Object obj = {};
 	obj.mesh = torus;
-	obj.material = MaterialType::BRASS; // NO_MATERIAL;
+	obj.material = MaterialType::NO_MATERIAL; //BRASS; // NO_MATERIAL;
 	obj.shading = ShadingType::TEXTURE_ONLY; //PASS_THROUGH; // TEXTURE_ONLY; // TEXTURE_PHONG;  
 	obj.name = "Torus";
 	//obj.diffuseTexID = loadTexture(TextureDir + "WoodGrain.bmp");
-	obj.diffuseTexID = loadTexture(TextureDir + "brickwall.jpg");
+	//obj.diffuseTexID = loadTexture(TextureDir + "brickwall.jpg");
+	compute_torus_procedural_texture(&obj);
 	obj.M = glm::translate(glm::mat4(1), glm::vec3(-5., 0., 5.));
 	objects.push_back(obj);
 	movables.push_back(objects.size() - 1);
