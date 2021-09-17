@@ -1,6 +1,8 @@
 # computer-graphics
 Lab excercises for the Foundations of Computer Graphics exam.  
 
+The library used is OpenGL 4.6 (Compatibility Profile) with Mesa 21.0.3, supported by GLEW 2.1.0.
+
 ## Lab 00 - 3D Cube
 Given the Lab00 setup, modify it to:  
 - [x] draw a single cube
@@ -44,7 +46,14 @@ Use Meshlab for:
 - [x] quality measure tools for surfaces (curvature)
 
 ## Lab 06 - Blender rendering - Digital Art
-- [ ] render a scene with Blender
+- [x] render a scene with Blender
 
-## Lab 07 - 
-- [ ] 
+## Lab 07 - Texture and normal mapping, environmental and refraction
+- [x] texture mapping 2D on the torus
+- [x] texture mapping 2D + Phong shader on the torus
+- [ ] procedural mapping on torus
+- [x] normal mapping
+- [x] environment cube mapping: skybox
+- [x] environment mapping: object reflection
+- [x] Environment mapping: object refraction
+- [x] semi-transparent objects
