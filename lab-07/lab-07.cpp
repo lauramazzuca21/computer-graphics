@@ -9,7 +9,7 @@ CTRL+WHEEL = pan orizzontale della telecamera
 SHIFT+WHEEL = pan verticale della telecamera
 WHEEL = se navigazione  --> ZOOM IN/OUT
 		se modify       --> agisce sulla trasformazione dell'oggetto
-g r s	per le modalità di lavoro: traslate/rotate/scale
+g r s	per le modalitï¿½ di lavoro: traslate/rotate/scale
 x y z	per l'asse di lavoro
 wcs/ocs selezionabili dal menu pop-up
 
@@ -18,242 +18,52 @@ based on the OpenGL Shading Language (GLSL) specifications.
 *******************************************************************************************/
 
 #define _CRT_SECURE_NO_WARNINGS // for fscanf
+#include "lab-07.h"
 
-#include <stdio.h>
-#include <math.h>
-#include <vector>
-#include <string>
-#include <map>
+double noise3D(double p[3]) {
+	const std::int32_t X = static_cast<std::int32_t>(std::floor(p[0])) & 255;
+	const std::int32_t Y = static_cast<std::int32_t>(std::floor(p[1])) & 255;
+	const std::int32_t Z = static_cast<std::int32_t>(std::floor(p[2])) & 255;
 
-#include <GL/glew.h>
-#include <GL/freeglut.h>
-#include <glm/glm.hpp>
-#include <glm/gtc/matrix_transform.hpp>
-#include <glm/gtc/type_ptr.hpp>
-#include "HUD_Logger.h"
-#include "ShaderMaker.h"
+	p[0] -= std::floor(p[0]);
+	p[1] -= std::floor(p[1]);
+	p[2] -= std::floor(p[2]);
 
-#define STB_IMAGE_IMPLEMENTATION
-#include "stb_image.h"
+	const double u = fade(p[0]);
+	const double v = fade(p[1]);
+	const double w = fade(p[2]);
 
-#define SHIFT_WHEEL_UP 11
-#define SHIFT_WHEEL_DOWN 12
-#define CTRL_WHEEL_UP 19
-#define CTRL_WHEEL_DOWN 20
+	const std::int32_t A = p[X] + Y, AA = p[A] + Z, AB = p[A + 1] + Z;
+	const std::int32_t B = p[X + 1] + Y, BA = p[B] + Z, BB = p[B + 1] + Z;
 
-#define NUM_SHADERS 7
-#define NUM_LIGHT_SHADERS 2
+	return lerp(w, lerp(v, lerp(u, grad(p[AA], p[0], p[1], p[2]),
+		grad(p[BA], p[0] - 1, p[1], p[2])),
+		lerp(u, grad(p[AB], p[0], p[1] - 1, p[2]),
+		grad(p[BB], p[0] - 1, p[1] - 1, p[2]))),
+		lerp(v, lerp(u, grad(p[AA + 1], p[0], p[1], p[2] - 1),
+		grad(p[BA + 1], p[0] - 1, p[1], p[2] - 1)),
+		lerp(u, grad(p[AB + 1], p[0], p[1] - 1, p[2] - 1),
+		grad(p[BB + 1], p[0] - 1, p[1] - 1, p[2] - 1))));
+}
 
-using namespace std;
-
-// Viewport size
-static int WindowWidth = 1120;
-static int WindowHeight = 630;
-GLfloat aspect_ratio = 16.0f / 9.0f;
-
-typedef struct {
-	std::vector<glm::vec3> vertices;
-	std::vector<glm::vec3> normals;
-	std::vector<glm::vec2> texCoords;
-	std::vector<glm::vec3> tangents;
-	GLuint vertexArrayObjID;
-	GLuint vertexBufferObjID;
-	GLuint normalBufferObjID;
-	GLuint uvBufferObjID;
-	GLuint tgBufferObjID;
-} Mesh;
-
-typedef enum {
-	RED_PLASTIC,
-	EMERALD,
-	BRASS,
-	SLATE,
-	NO_MATERIAL
-} MaterialType;
-
-typedef struct {
-	std::string name;
-	glm::vec3 ambient;
-	glm::vec3 diffuse;
-	glm::vec3 specular;
-	GLfloat shininess;
-} Material;
-
-typedef enum { // used also as index, don't modify order
-	NORMAL_MAPPING,
-	TEXTURE_PHONG,
-	SKYBOX,
-	REFLECTION,
-	REFRACTION,
-	TEXTURE_ONLY,
-	PASS_THROUGH
-} ShadingType;
-
-typedef struct {
-	Mesh mesh;
-	MaterialType material;
-	ShadingType shading;
-	GLuint diffuseTexID;
-	GLuint normalTexID;
-	glm::mat4 M;
-	string name;
-	bool blended;
-} Object;
-
-typedef struct {
-	GLuint light_position_pointer;
-	GLuint light_color_pointer;
-	GLuint light_power_pointer;
-	GLuint material_diffuse;
-	GLuint material_ambient;
-	GLuint material_specular;
-	GLuint material_shininess;
-	GLuint diffuse_sampler;
-	GLuint normal_sampler;
-} LightShaderUniform;
-
-typedef struct {
-	GLuint P_Matrix_pointer;
-	GLuint V_Matrix_pointer;
-	GLuint M_Matrix_pointer;
-	GLuint camera_position_pointer;
-} BaseShaderUniform;
-
-const string MeshDir = "Mesh/";
-const string TextureDir = "Textures/";
-const string ShaderDir = "Shaders/";
-static GLuint cubeTexture;
-static vector<int> movables; // Objects that the user can move an focus on
-static vector<int> transparents; // Objects to be drawn later for blending reasons
-static vector<Object> objects; // All 3D stuff
-static vector<Material> materials;
-static int selected_obj = 0;
-
-struct {
-	// Variables controlling the torus mesh resolution
-	int NumWraps = 10;
-	int NumPerWrap = 8;
-	// Variables controlling the size of the torus
-	float MajorRadius = 3.0;
-	float MinorRadius = 1.0;
-	// Variables controlling the texture distribution
-	int TextureWrapVert = 1;
-	int TextureWrapHoriz = 1;
-	int torus_index;
-} TorusSetup;
-
-// Materiali disponibili
-glm::vec3 red_plastic_ambient = { 0.1, 0.0, 0.0 }, red_plastic_diffuse = { 0.6, 0.1, 0.1 }, red_plastic_specular = { 0.6, 0.6, 0.6 }; GLfloat red_plastic_shininess = 32.0f;
-glm::vec3 brass_ambient = { 0.1, 0.06, 0.015 }, brass_diffuse = { 0.78, 0.57, 0.11 }, brass_specular = { 0.99, 0.91, 0.91 }; GLfloat brass_shininess = 27.8f;
-glm::vec3 emerald_ambient = { 0.0215, 0.04745, 0.0215 }, emerald_diffuse = { 0.07568, 0.71424, 0.07568 }, emerald_specular = { 0.633,0.633, 0.633 }; GLfloat emerald_shininess = 78.8f;
-glm::vec3 slate_ambient = { 0.02, 0.02, 0.02 }, slate_diffuse = { 0.1, 0.1, 0.1 }, slate_specular{ 0.3, 0.3, 0.3 }; GLfloat slate_shininess = 20.78125f;
-
-typedef struct {
-	glm::vec3 position;
-	glm::vec3 color;
-	GLfloat power;
-} point_light;
-
-static point_light light;
-
-/*camera structures*/
-constexpr float CAMERA_ZOOM_SPEED = 0.1f;
-constexpr float CAMERA_TRASLATION_SPEED = 0.01f;
-
-struct {
-	glm::vec4 position;
-	glm::vec4 target;
-	glm::vec4 upVector;
-} ViewSetup;
-
-struct {
-	float fovY, aspect, near_plane, far_plane;
-} PerspectiveSetup;
-
-typedef enum {
-	WIRE_FRAME,
-	FACE_FILL,
-	CULLING_ON,
-	CULLING_OFF,
-	CHANGE_TO_WCS,
-	CHANGE_TO_OCS
-} MenuOption;
-
-enum {
-	NAVIGATION,
-	CAMERA_MOVING,
-	TRASLATING,
-	ROTATING,
-	SCALING
-} OperationMode;
-
-enum {
-	X,
-	Y,
-	Z
-} WorkingAxis;
-
-enum {
-	OCS, // Object Coordinate System
-	WCS // World Coordinate System
-} TransformMode;
-
-static bool moving_trackball = 0;
-static int last_mouse_pos_Y;
-static int last_mouse_pos_X;
-
-//Shaders Uniforms 
-static vector<LightShaderUniform> light_uniforms; // for shaders with light
-static vector<BaseShaderUniform> base_uniforms; // for ALL shaders
-static vector<GLuint> shaders_IDs; //Pointers to the shader programs
-// Main initialization funtion
-void initShader();
-void init();
-// Display Funtion
-void display();
-// Reshape Function
-void resize(int w, int h);
-// Calls glutPostRedisplay each millis milliseconds
-void refresh_monitor(int millis);
-// Mouse Function
-void mouseClick(int button, int state, int x, int y);
-// Keyboard:  g traslate r rotate s scale x,y,z axis esc 
-void keyboardDown(unsigned char key, int x, int y);
-// Special key arrow: select active object (arrows left,right)
-void special(int key, int x, int y);
-// gestione delle voci principali del menu
-void main_menu_func(int option);
-// gestione delle voci principali del sub menu per i matriali
-void material_menu_function(int option);
-// costruisce i menu openGL
-void buildOpenGLMenu();
-// Trackball: Converte un punto 2D sullo schermo in un punto 3D sulla trackball
-glm::vec3 getTrackBallPoint(float x, float y);
-// Trackball: Effettua la rotazione del vettore posizione sulla trackball
-void mouseActiveMotion(int x, int y);
-void moveCameraForeward();
-void moveCameraBack();
-void moveCameraLeft();
-void moveCameraRight();
-void moveCameraUp();
-void moveCameraDown();
-//	Crea ed applica la matrice di trasformazione alla matrice dell'oggeto discriminando tra WCS e OCS.
-//	La funzione è gia invocata con un input corretto, è sufficiente concludere la sua implementazione.
-void modifyModelMatrix(glm::vec3 translation_vector, glm::vec3 rotation_vector, GLfloat angle, GLfloat scale_factor);
-/* Mesh Functions*/
-void compute_Torus(Mesh* mesh);
-// Genera i buffer per la mesh in input e ne salva i puntatori di openGL
-void generate_and_load_buffers(bool generate, Mesh* mesh);
-// legge un file obj ed inizializza i vector della mesh in input
-void loadObjFile(string file_path, Mesh* mesh);
-//Uses stb_image.h to read an image, then loads it.
-GLuint loadTexture(string path);
-//Loads 6 images to build a cube map
-GLuint load_cube_map_texture(string face_textures[6]);
-//Surface Tangents calculations based on edges distances and uv distances, Bitangents are calculated in the vertex shader
-void calc_tangents(Mesh* mesh);
-// 2D fixed pipeline Font rendering on screen
-void printToScreen();
+double turbolence(double x,double y,double z, double scaleMod, double progression, int octaves)
+{ 
+	int i;
+	double sum = 0;
+	double p[3], scale = 1;
+	p[0] = x; 
+	p[1] = y; 
+	p[2] = z;
+	for (i=0; i<octaves; i++)
+	{ 
+		sum += noise3D(p) / scale;
+		scale *= scaleMod;
+		p[0] *= progression;
+		p[1] *= progression;
+		p[2] *= progression; 
+	}
+	return sum;
+}
 
 void init_light_object() {
 	Mesh sphereS = {};
@@ -278,7 +88,7 @@ void init_reflective_sphere() {
 	obj.mesh = surface;
 	obj.diffuseTexID = cubeTexture;
 	obj.material = MaterialType::NO_MATERIAL;
-	obj.shading = ShadingType::PASS_THROUGH; //  TODO REFLECTION;
+	obj.shading = ShadingType::REFLECTION; //PASS_THROUGH;
 	obj.name = "Mirror Ball";
 	obj.M = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-3, 2, -6)), glm::vec3(1.0, 1.0, 1.0));
 	objects.push_back(obj);
@@ -294,7 +104,7 @@ void init_refractive_obj() {
 	obj.mesh = surface;
 	obj.diffuseTexID = cubeTexture;
 	obj.material = MaterialType::NO_MATERIAL;
-	obj.shading = ShadingType::PASS_THROUGH;  // TODO REFRACTION
+	obj.shading = ShadingType::REFRACTION; //PASS_THROUGH;  // TODO REFRACTION
 	obj.name = "Glass Cube";
 	obj.M = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-6, 2, -3)), glm::vec3(2.0, 2.0, 2.0));
 	objects.push_back(obj);
@@ -361,7 +171,7 @@ void init_rock() {
 	obj.diffuseTexID = loadTexture(TextureDir + "sharprockfree_default_color.png");
 	obj.normalTexID = loadTexture(TextureDir + "sharprockfree_default_nmap-dx.png");
 	obj.material = MaterialType::SLATE;
-	obj.shading = ShadingType::TEXTURE_ONLY; // TODO NORMAL_MAPPING;
+	obj.shading = ShadingType::NORMAL_MAPPING; //TEXTURE_ONLY; // NORMAL_MAPPING;
 	obj.name = "Sharpy Rock";
 	obj.M = glm::scale(glm::translate(glm::mat4(1), glm::vec3(5, 0.75, 5)), glm::vec3(0.02, 0.02, 0.02));
 	objects.push_back(obj);
@@ -378,9 +188,14 @@ void init_brick_column() {
 	obj.diffuseTexID = loadTexture(TextureDir + "brickwall.jpg");
 	obj.normalTexID = loadTexture(TextureDir + "brickwall_normal.jpg");
 	obj.material = MaterialType::SLATE;
-	obj.shading = ShadingType::TEXTURE_ONLY; // TODO NORMAL_MAPPING;
+	obj.shading = ShadingType::NORMAL_MAPPING; //TEXTURE_ONLY; // NORMAL_MAPPING;
 	obj.name = "Brick Wall Normal Mapping";
 	obj.M = glm::scale(glm::translate(glm::mat4(1), glm::vec3(6, 2, -3)), glm::vec3(4., 4., 4.));
+	objects.push_back(obj);
+	movables.push_back(objects.size() - 1);
+	obj.shading = ShadingType::TEXTURE_PHONG; //TEXTURE_ONLY; // NORMAL_MAPPING;
+	obj.name = "Brick Wall Phong Mapping";
+	obj.M = glm::scale(glm::translate(glm::mat4(1), glm::vec3(6, 2, -6)), glm::vec3(4., 4., 4.));
 	objects.push_back(obj);
 	movables.push_back(objects.size() - 1);
 }
@@ -388,7 +203,7 @@ void init_brick_column() {
 void init_skybox() {
 	Mesh surface = {};
 	loadObjFile(MeshDir + "cube_n_t_flat.obj", &surface);
-	//std::reverse(surface.vertices.begin(), surface.vertices.end()); // reverse draw order to counter ClockWise face culling
+	std::reverse(surface.vertices.begin(), surface.vertices.end()); // reverse draw order to counter ClockWise face culling
 	generate_and_load_buffers(true, &surface);
 	Object obj = {};
 	obj.mesh = surface;
@@ -396,8 +211,8 @@ void init_skybox() {
 	obj.material = MaterialType::NO_MATERIAL;
 	obj.shading = ShadingType::SKYBOX;
 	obj.name = "skybox";
-	//  TODO posizionamento cubo contenente la scena
-	obj.M = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-3, 0, 3)), glm::vec3(2.));
+
+	obj.M = glm::scale(glm::translate(glm::mat4(1), glm::vec3(0, 0, 0)), glm::vec3(2.));
 	objects.push_back(obj);
 }
 
@@ -430,10 +245,10 @@ void init_torus() {
 	Object obj = {};
 	obj.mesh = torus;
 	obj.material = MaterialType::BRASS; // NO_MATERIAL;
-	obj.shading = ShadingType::PASS_THROUGH; // TEXTURE_ONLY; // TEXTURE_PHONG;  
+	obj.shading = ShadingType::TEXTURE_ONLY; //PASS_THROUGH; // TEXTURE_ONLY; // TEXTURE_PHONG;  
 	obj.name = "Torus";
 	//obj.diffuseTexID = loadTexture(TextureDir + "WoodGrain.bmp");
-	//obj.diffuseTexID = loadTexture(TextureDir + "brickwall.jpg");
+	obj.diffuseTexID = loadTexture(TextureDir + "brickwall.jpg");
 	obj.M = glm::translate(glm::mat4(1), glm::vec3(-5., 0., 5.));
 	objects.push_back(obj);
 	movables.push_back(objects.size() - 1);
@@ -474,7 +289,8 @@ void init() {
 	glCullFace(GL_BACK);	// remove faces facing the background
 	glEnable(GL_LINE_SMOOTH);
 	// Blending set up
-	//TODO enable alpha blending for the windows  --->	glEnable(GL_BLEND);  
+	//TODO enable alpha blending for the windows  --->	
+	glEnable(GL_BLEND);  
 	// The blending function tells the pipeline how to mix the color of a transparent object with the background.
 	// The factor of the source color is the source color alpha,
 	// The factor of the destination color is calculated as 1 - alpha of the source color
@@ -605,10 +421,29 @@ void initShader()
 	base_uniforms[ShadingType::SKYBOX] = base_unif;
 
 	//REFLECTION Shader loading
-	// TODO REFLECTION
+	shaders_IDs[REFLECTION] = createProgram(ShaderDir + "v_reflection.glsl", ShaderDir + "f_reflection.glsl");
+	//Otteniamo i puntatori alle variabili uniform per poterle utilizzare in seguito
+	base_unif.P_Matrix_pointer = glGetUniformLocation(shaders_IDs[REFLECTION], "P");
+	base_unif.V_Matrix_pointer = glGetUniformLocation(shaders_IDs[REFLECTION], "V");
+	base_unif.M_Matrix_pointer = glGetUniformLocation(shaders_IDs[REFLECTION], "M");
+	base_unif.camera_position_pointer = glGetUniformLocation(shaders_IDs[REFLECTION], "cameraPos");
+	//Rendiamo attivo lo shader
+	glUseProgram(shaders_IDs[REFLECTION]);
+	glUniform1i(glGetUniformLocation(shaders_IDs[REFLECTION], "reflection"), 0);
+	base_uniforms[ShadingType::REFLECTION] = base_unif;
+
 
 	//REFRACTION Shader loading
-	// TODO REFRACTION
+	shaders_IDs[REFRACTION] = createProgram(ShaderDir + "v_refraction.glsl", ShaderDir + "f_refraction.glsl");
+	//Otteniamo i puntatori alle variabili uniform per poterle utilizzare in seguito
+	base_unif.P_Matrix_pointer = glGetUniformLocation(shaders_IDs[REFRACTION], "P");
+	base_unif.V_Matrix_pointer = glGetUniformLocation(shaders_IDs[REFRACTION], "V");
+	base_unif.M_Matrix_pointer = glGetUniformLocation(shaders_IDs[REFRACTION], "M");
+	base_unif.camera_position_pointer = glGetUniformLocation(shaders_IDs[REFRACTION], "cameraPos");
+	//Rendiamo attivo lo shader
+	glUseProgram(shaders_IDs[REFRACTION]);
+	glUniform1i(glGetUniformLocation(shaders_IDs[REFRACTION], "refraction"), 0);
+	base_uniforms[ShadingType::REFRACTION] = base_unif;
 
 	//Texture Shader loading
 	shaders_IDs[TEXTURE_ONLY] = createProgram(ShaderDir + "v_texture.glsl", ShaderDir + "f_texture.glsl");
@@ -737,10 +572,18 @@ void drawScene() {
 			glDepthMask(GL_FALSE);
 			break;
 		case ShadingType::REFLECTION:
-			//TODO REFLECTION
+			glUseProgram(shaders_IDs[REFLECTION]);
+			// Caricamento matrice trasformazione del modello
+			glUniformMatrix4fv(base_uniforms[REFLECTION].M_Matrix_pointer, 1, GL_FALSE, value_ptr(objects[i].M));
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_CUBE_MAP, objects[i].diffuseTexID);
 			break;
 		case ShadingType::REFRACTION:
-			// TODO REFRACTION
+			glUseProgram(shaders_IDs[REFRACTION]);
+			// Caricamento matrice trasformazione del modello
+			glUniformMatrix4fv(base_uniforms[REFRACTION].M_Matrix_pointer, 1, GL_FALSE, value_ptr(objects[i].M));
+			glActiveTexture(GL_TEXTURE0);
+			glBindTexture(GL_TEXTURE_CUBE_MAP, objects[i].diffuseTexID);
 			break;
 		case ShadingType::TEXTURE_ONLY:
 			glUseProgram(shaders_IDs[TEXTURE_ONLY]);
@@ -930,7 +773,7 @@ void mouseActiveMotion(int x, int y)
 void keyboardDown(unsigned char key, int x, int y)
 {
 	switch (key) {
-		// Selezione della modalità di trasformazione
+		// Selezione della modalitï¿½ di trasformazione
 	case 'g':
 		OperationMode = TRASLATING;
 		break;
@@ -1103,7 +946,7 @@ void moveCameraDown()
 
 void modifyModelMatrix(glm::vec3 translation_vector, glm::vec3 rotation_vector, GLfloat angle, GLfloat scale_factor)
 {
-// SEE LAB_03 se volete potete inserire i tool di trasformazione già implementati 	
+// SEE LAB_03 se volete potete inserire i tool di trasformazione giï¿½ implementati 	
 }
 
 /*
@@ -1126,14 +969,16 @@ void computeTorusVertex(int i, int j, Mesh* mesh) {
 
 	mesh->vertices.push_back(glm::vec3(x, y, z));
 	mesh->normals.push_back(glm::vec3(sintheta * cosphi, sinphi, costheta * cosphi));
-	
+	//pig gives the frequency with which the texture is associated to the vertices so the result is either a stretch or a compression of the texture
+	mesh->texCoords.push_back(glm::vec2(theta/pig, phi/pig));
 }
 
 void compute_Torus(Mesh* mesh)
 {
 	mesh->vertices.clear();
 	mesh->normals.clear();
-	
+	mesh->texCoords.clear();
+
 	// draw the torus as NumWraps strips one next to the other
 	for (int i = 0; i < TorusSetup.NumWraps; i++) {
 		for (int j = 0; j <= TorusSetup.NumPerWrap; j++) {
