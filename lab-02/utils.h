@@ -11,6 +11,7 @@ namespace colors {
     static const glm::vec4 lincoln_green 	= { 36.0/255.0,85.0/255.0,1.0/255.0, 1.0 };
     static const glm::vec4 persian_plum 	= { 107.0/255.0,29.0/255.0,25.0/255.0, 1.0 };
     static const glm::vec4 cinnabar 		= { 219.0/255.0,78.0/255.0,70.0/255.0, 1.0 };
+    static const glm::vec4 midnight_blue	= { 28.0/255.0,29.0/255.0,96.0/255.0, 1.0 };
     static const glm::vec4 top_Navicella 	= { 1.0,1.5,0.0,1.0 };
     static const glm::vec4 bot_Navicella 	= { 1.0,0.8,0.8,0.5 };
     static const glm::vec4 top_Corpo     	= { 0.0,0.5,0.8,1.0 };

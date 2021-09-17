@@ -1,6 +1,7 @@
 
 #include "CoronaGame.h"
 #include <iostream>
+#include <cstdlib>
 #include "ShaderMaker.h"
 
 /***************GAME UPDATES***************/
@@ -38,14 +39,23 @@ void updateProiettile(int value)
 	{
 		pos_projectiles.at(i).y++;
 		if (pos_projectiles.at(i).y >= height)
-			pos_projectiles.erase(pos_projectiles.begin(),pos_projectiles.begin()+i);
+			to_remove.push_back(i);
+	}
+	for (int idx : to_remove)
+	{
+		pos_projectiles.erase(pos_projectiles.begin()+idx);
 	}
 
+	to_remove.clear();
 	for (int i = 0; i < pos_strong_projectiles.size(); i++)
 	{
-		pos_strong_projectiles.at(i).y++;
+		pos_strong_projectiles.at(i).y+=2;
 		if (pos_strong_projectiles.at(i).y > height)
-			pos_strong_projectiles.erase(pos_strong_projectiles.begin(),pos_strong_projectiles.begin()+i);
+			to_remove.push_back(i);
+	}
+	for (int idx : to_remove)
+	{
+		pos_strong_projectiles.erase(pos_strong_projectiles.begin()+idx);	
 	}
 	glutPostRedisplay();
 }
@@ -348,6 +358,21 @@ void disegna_nemico(glm::vec4 color_top_Nemico, glm::vec4 color_bot_Nemico, glm:
 		Nemico[cont + i] = Tentacoli[i];
 }
 
+void draw_stars(math_utils::Point* stars) {
+	int cont=0;
+	math_utils::Point* tmp;
+	tmp = new math_utils::Point[nVertices_star];
+	draw_utils::disegna_cerchio(0.0f, 0.0f, 1.0f, 1.0f, colors::bianco, colors::bianco, tmp);
+	for (int j = 0; j < 3 * nTriangles; j++)
+	{
+		stars[cont].x = tmp[j].x;
+		stars[cont].y = tmp[j].y;
+		stars[cont].z = tmp[j].z;
+		stars[cont].r = tmp[j].r;stars[cont].g = tmp[j].g;stars[cont].b = tmp[j].b;stars[cont].a = tmp[j].a;
+		cont++;
+	}
+}
+
 void initShader(void)
 {
 	GLenum ErrorCheckValue = glGetError();
@@ -364,11 +389,17 @@ void initShader(void)
 	programId_1 = ShaderMaker::createProgram(vertexShader1, fragmentShader1);
 }
 
+void update_stars_positions() {
+	pos_stars.clear();
+	for (int i = 0; i < 50; i++) {
+		pos_stars.push_back(math_utils::Point(rand()%width, rand()%height, 0.0f));
+	}
+}
 
 void init(void)
 {
 	//Disegno SPAZIO/CIELO
-	draw_utils::disegna_piano(0.0, 0.0, 1.0, 1.0, colors::top, colors::nero, Cielo);
+	draw_utils::disegna_piano(0.0, 0.0, 1.0, 1.0, colors::midnight_blue, colors::nero, Cielo);
 	//Genero un VAO
 	glGenVertexArrays(1, &VAO_CIELO);
 	//Ne faccio il bind (lo collego, lo attivo)
@@ -385,6 +416,22 @@ void init(void)
 	glEnableVertexAttribArray(1);
 	glBindVertexArray(0);
 	
+	//draw stars
+	//Costruzione geometria e colori delle stars
+	//Genero il VAO delle STARS
+    draw_stars(Stars);
+	glGenVertexArrays(1, &VAO_STAR);
+	glBindVertexArray(VAO_STAR);
+	glGenBuffers(1, &VBO_S);
+	glBindBuffer(GL_ARRAY_BUFFER, VBO_S);
+	glBufferData(GL_ARRAY_BUFFER, nVertices_star * sizeof(math_utils::Point), &Stars[0], GL_STATIC_DRAW);
+	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)0);
+	glEnableVertexAttribArray(0);
+	glVertexAttribPointer(1, 4, GL_FLOAT, GL_FALSE, 7 * sizeof(float), (void*)(3 * sizeof(float)));
+	glEnableVertexAttribArray(1);
+	//Scollego il VAO
+	glBindVertexArray(0);
+
 	//Disegno NAVICELLA	
 	disegna_Navicella(colors::top_Navicella, colors::bot_Navicella, colors::top_Corpo, colors::bot_Corpo, colors::top_Oblo, colors::bot_Oblo, Navicella);
 	//Genero un VAO navicella
@@ -419,8 +466,6 @@ void init(void)
 	//Disegna nemici
 	disegna_nemico(colors::lincoln_green, colors::bianco, colors::nero, colors::bianco, Nemico);
 	//Genero un VAO
-	// for (int k = nVertices_Nemico-nvSpikes; k < nVertices_Nemico; k++)
-	// 	std::cout << "x=" << Nemico[k].x << ", y=" << Nemico[k].y << "\n";
 
 	glGenVertexArrays(1, &VAO_NEMICO);
 	glBindVertexArray(VAO_NEMICO);
@@ -454,6 +499,18 @@ void init(void)
 	loc = glGetUniformLocation(programId_1, "t");
 }
 
+bool deleteHitRow(int idx) {
+	int colpitoRiga = 0;
+	for(int i = 0; i < nemici_per_riga; i++)
+	{
+		 if (colpito[idx][i]) {
+				colpitoRiga++;
+			}
+	}
+
+	return colpitoRiga == nemici_per_riga;
+}
+
 void checkHitEnemy() {
 			// calcolo virus colpiti
 	for (int i = 0; i < numero_di_righe; i++)
@@ -462,8 +519,8 @@ void checkHitEnemy() {
 		for (int j = 0; j < nemici_per_riga; j++)
 		{			
 			posxN = j * (passo_Nemici)+passo_Nemici / 2 + rand() % 40;
-
-			for (int k =0, sk = 0; k < pos_projectiles.size() || sk < pos_strong_projectiles.size(); k++, sk++)
+			std::vector<int> to_remove;
+			for (int k =0; k < pos_projectiles.size() ; k++)
 			{
 				if ( k < pos_projectiles.size()
 				&&((pos_projectiles.at(k).x >= posxN - dxnemici) && (pos_projectiles.at(k).x <= posxN + dxnemici)) 
@@ -472,9 +529,18 @@ void checkHitEnemy() {
 				{
 						NumeroColpiti++;
 						colpito[i][j] = true;
-						pos_projectiles.erase(pos_projectiles.begin(), pos_projectiles.begin()+k);
+						to_remove.push_back(k);
+						printf("Colpiti: %d", NumeroColpiti);
 				}
+			}
 
+			for ( int idx : to_remove)
+			{
+				pos_projectiles.erase(pos_projectiles.begin()+idx);
+			}
+
+			for (int sk = 0; sk < pos_strong_projectiles.size(); sk++)
+			{
 				if ( sk < pos_strong_projectiles.size()
 				&&	((pos_strong_projectiles.at(sk).x >= posxN - dxnemici) && (pos_strong_projectiles.at(sk).x <= posxN + dxnemici)) 
 				&& ((pos_strong_projectiles.at(sk).y >= posyN - dynemici) && (pos_strong_projectiles.at(sk).y <= posyN + dynemici))
@@ -482,7 +548,7 @@ void checkHitEnemy() {
 				{
 						NumeroColpiti++;
 						colpito[i][j] = true;
-						pos_strong_projectiles.erase(pos_strong_projectiles.begin(), pos_strong_projectiles.begin()+sk);
+						printf("Colpiti: %d", NumeroColpiti);
 				}
 			}
 		}
@@ -506,6 +572,11 @@ void updateDrawEnemy() {
 
 void drawScene(void)
 {
+	if (gameEnd)
+	{
+		return;
+	}
+
 	glUniformMatrix4fv(MatProj, 1, GL_FALSE, value_ptr(Projection));
 	glClear(GL_COLOR_BUFFER_BIT);
 
@@ -519,6 +590,23 @@ void drawScene(void)
 	glDrawArrays(GL_TRIANGLES, 0, vertices_cielo);
 	glBindVertexArray(0);
 
+	if (timeoutStars < 0) {
+		update_stars_positions();
+			timeoutStars = TIMEOUT_STARS;
+	}
+	else
+		--timeoutStars;
+	
+	glBindVertexArray(VAO_STAR);
+	for (int i = 0; i < 50; i++)
+	{
+		Model = glm::mat4(1.0);
+		Model = glm::translate(Model, glm::vec3(pos_stars.at(i).x, pos_stars.at(i).y, 1.0));
+		Model = glm::scale(Model, glm::vec3(1.0f, 1.0f, 1.0));
+		glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Model));
+		glDrawArrays(GL_TRIANGLES, 0, nVertices_star);
+	}
+	glBindVertexArray(0);
 
 	//Disegno Navicella
 	glBindVertexArray(VAO);
@@ -531,7 +619,13 @@ void drawScene(void)
 	glBindVertexArray(0);
 	
 	checkHitEnemy();
-
+	int eliminaRighe = 0;
+	for (int i = 0; i < numero_di_righe; i++)
+	{
+		if (deleteHitRow(i))
+			eliminaRighe++;
+	}
+	numero_di_righe -= eliminaRighe;
 	// Disegna nemici VIRUS
 	glBindVertexArray(VAO_NEMICO);
 	for (int i = 0; i < numero_di_righe; i++)
@@ -539,20 +633,19 @@ void drawScene(void)
 		posyN = height - i * passo_righe - 20;
 		for (int j = 0; j < nemici_per_riga; j++)
 		{
-			posxN = j * (passo_Nemici)+passo_Nemici / 2;
+			posxN = j * (passo_Nemici) + passo_Nemici / 2;
 			if (!colpito[i][j]) {
 				updateDrawEnemy();
 			}
 		}
 	}
+
 	glBindVertexArray(0);
 
 		//Disegno il proiettile
 	glBindVertexArray(VAO_PROJ);
-
 	for (auto p : pos_projectiles)
 	{
-		glPolygonMode(GL_FRONT_AND_BACK, GL_FILL);
 		glPointSize(8.0);
 		Model = glm::mat4(1.0);
 		Model = glm::translate(Model, glm::vec3(p.x, p.y, 0));
@@ -568,13 +661,16 @@ void drawScene(void)
 		glDrawArrays(GL_TRIANGLES, 1, 6);
 	}
 	glBindVertexArray(0);
-	
+
+	if (numero_di_righe == 0 || posyN + dynemici >= posy + 40.0f)
+		gameEnd = true;
 	glutSwapBuffers();
 }
 
 int main(int argc, char* argv[])
 {
 	glutInit(&argc, argv);
+	srand (time(NULL));
 
 	glutInitContextVersion(4, 0);
 	glutInitContextProfile(GLUT_CORE_PROFILE);

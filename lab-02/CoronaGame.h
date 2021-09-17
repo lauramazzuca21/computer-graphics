@@ -9,25 +9,31 @@
 #include <vector>
 #include "utils.h"
 
+#define  TIMEOUT_STARS 100;
+
 static unsigned int programId, programId_1;
 
-unsigned int VAO, VAO_CIELO, VAO_NEMICO, VAO_PROJ;
-unsigned int VBO, VBO_C, VBO_N, VBO_P, VBO_SP, loc, MatProj, MatModel, MatProj1, MatModel1;
+unsigned int VAO, VAO_STAR, VAO_CIELO, VAO_NEMICO, VAO_PROJ;
+unsigned int VBO, VBO_S, VBO_C, VBO_N, VBO_P, VBO_SP, loc, MatProj, MatModel, MatProj1, MatModel1;
 // Viewport size
 int width = 1280;
 int height = 720;
 
+int timeoutStars = -1;
 int NumeroColpiti = 0;
 glm::mat4 Projection;  //Matrice di proiezione
 glm::mat4 Model; //Matrice per il cambiamento di sistema di riferimento: da Sistema diriferimento dell'oggetto a sistema di riferimento nel Mondo
 
-float dxnemici = 20.0f;
-float dynemici = 20.0f;
+float dxnemici = 50.0f;
+float dynemici = 50.0f;
 float posxN, posyN;
 int nemici_per_riga = 5;
 int numero_di_righe = 3;
+int eliminaRighe = 0;
 float passo_Nemici = ((float)width) / nemici_per_riga;
 float passo_righe = 150.0f;
+
+bool gameEnd = false;
 
 int nVertices_Navicella = 12 * nTriangles;
 
@@ -35,6 +41,9 @@ int nvBocca = 5;
 int nvTentacoli = 16;
 int nvSpikes = 8 * 3 * nTriangles; // adds vertexes of spikes
 int nVertices_Nemico = 3 * nTriangles + 2* 3 * nTriangles + nvBocca + nvTentacoli + nvSpikes;
+
+int nVertices_star = 3 * nTriangles;
+math_utils::Point* Stars = new math_utils::Point[nVertices_star];
 
 math_utils::Point* Navicella = new math_utils::Point[nVertices_Navicella];
 math_utils::Point* Nemico = new math_utils::Point[nVertices_Nemico];
@@ -46,6 +55,7 @@ math_utils::Point* Cielo = new math_utils::Point[vertices_cielo];
 float t;
 std::vector<math_utils::Point> pos_projectiles;
 std::vector<math_utils::Point> pos_strong_projectiles;
+std::vector<math_utils::Point> pos_stars;
 
 //ANIMARE V
 double VelocitaOrizzontale = 0; //velocita orizzontale (pixel per frame)
