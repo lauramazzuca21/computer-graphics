@@ -2,8 +2,8 @@
 #include "CoronaGame.h"
 #include <iostream>
 #include <cstdlib>
+#include <sstream>
 #include "ShaderMaker.h"
-
 /***************GAME UPDATES***************/
 void updateNemici(int value)
 {
@@ -662,7 +662,7 @@ void drawScene(void)
 	}
 	glBindVertexArray(0);
 
-	if (numero_di_righe == 0 || posyN + dynemici >= posy + 40.0f)
+	if (numero_di_righe == 0 || posyN + passo_Nemici <= posy + 40.0f)
 		gameEnd = true;
 	glutSwapBuffers();
 }

@@ -3,6 +3,8 @@ Lab excercises for the Foundations of Computer Graphics exam.
 
 The library used is OpenGL 4.6 (Compatibility Profile) with Mesa 21.0.3, supported by GLEW 2.1.0.
 
+> The commits in this repo follow the [Gitmoji](https://gitmoji.carloscuesta.me/) guide.
+
 ## Lab 00 - 3D Cube
 Given the Lab00 setup, modify it to:  
 - [x] draw a single cube
@@ -16,9 +18,10 @@ Given the Lab01 setup, modify it to:
 - [x] draw Bézier curve with the optimized adaptive subdivision method
 
 ## Lab 02 - 2D CoronaGame
-- [ ] lose condition: last lane of viruses reaches the ship
 - [x] Q+SPACE for strong attack with cooldown
 - [x] change viruses's look
+- [x] starry background
+- [x] win condition: kill all enemies before the last lane reaches the spaceship
 
 ## Lab 03 - 3D Polygonal Meshes Scene Control
 Given the Lab03 setup, modify it to:
@@ -50,6 +53,7 @@ Use Meshlab for:
 - [x] render a scene with Blender
 
 ## Lab 07 - Texture and normal mapping, environmental and refraction
+Given the Lab07 setup, modify it with:
 - [x] texture mapping 2D on the torus
 - [x] texture mapping 2D + Phong shader on the torus
 - [x] procedural mapping on torus
