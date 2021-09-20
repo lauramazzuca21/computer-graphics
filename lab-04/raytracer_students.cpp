@@ -150,7 +150,6 @@ RayTracer::TraceRay (Ray & ray, Hit & hit, int bounce_count) const
 			// se e' la sorgente luminosa i-esima e il dot prod tra normale ed l è > 0 allora
 				if ( dist.Length() < 0.01f &&  intensity > 0.0f)
 				{
-					//	calcolare e aggiungere ad answer il contributo luminoso
 					Vec3f lightColor =  0.2f * f->getMaterial()->getEmittedColor() * f->getArea();
 					// add to answer the contribution of the light found - it will return black (so a shadow) if the light does not contribute
 					answer += (1.0f/args->num_shadow_samples) * m->Shade(ray, hit, dirToLight, lightColor, args);
@@ -182,7 +181,6 @@ RayTracer::TraceRay (Ray & ray, Hit & hit, int bounce_count) const
 		// se e' la sorgente luminosa i-esima e il dot prod tra normale ed l è > 0 allora
 			if ( dist.Length() < 0.01f && normal.Dot3(dirToLight) > 0)
 			{
-				//	calcolare e aggiungere ad answer il contributo luminoso
 				Vec3f lightColor = 0.2f * f->getMaterial()->getEmittedColor() * f->getArea();
 				// add to answer the contribution of the light found - it will return black (so a shadow) if the light does not contribute
 				answer += m->Shade(ray, hit, dirToLight, lightColor, args);

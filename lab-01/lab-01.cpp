@@ -38,21 +38,22 @@ using namespace glm;
 #define DE_CASTELJAU 			0
 #define ADAPTIVE_SUBDIVISION	1 			
 
-#define PointRadius		8.0
-#define SegmentRadius	2.5
-#define CurveRadius		1.0
-#define CurvePointRadius		2.0
-#define Tolerance		0.00075f
+#define PointRadius			8.0
+#define SegmentRadius		2.5
+#define CurveRadius			1.0
+#define CurvePointRadius	2.0
+#define Tolerance			0.00075f
 
-#define MaxDeg 			2
-#define MaxNumCurvePts 	1000 //increased from 100 to 1000 to support chosen tolerance's production of curve points
-#define MaxNumPts 		64
+#define MaxDeg 				2
+#define MaxNumCurvePts 		100 
+#define MaxNumCurvePtsAS	1000 //increased from 100 to 1000 to support chosen tolerance's production of curve points
+#define MaxNumPts 			64
 float PointArray[MaxNumPts][3];
-float CurvePointArray[MaxNumCurvePts][3];
+float CurvePointArray[MaxNumCurvePtsAS][3];
 int NumPts = 0;
 int CurveNumPts = 0;
 int SelectedCP = -1;
-int method = 	1;
+int method = 	ADAPTIVE_SUBDIVISION; //DE_CASTELJAU; //ADAPTIVE_SUBDIVISION;
 // Window size in pixels
 int		width = 500;
 int		height = 500;
@@ -389,6 +390,9 @@ void adaptiveSubdivision(float tempArray[MaxNumPts][3], int size) {
 
 void generateBezierPoints() {
 	CurveNumPts = 0;
+	if (NumPts <= 1)
+		return;
+
 	switch(method) {
 		case DE_CASTELJAU:
 		{
@@ -399,6 +403,7 @@ void generateBezierPoints() {
 				t = (GLfloat)j/MaxNumCurvePts;
 				deCasteljau(t, PointArray, CurvePointArray[j], NumPts);
 			}
+			CurveNumPts = MaxNumCurvePts;	
 		}
 		break;
 		case ADAPTIVE_SUBDIVISION:
@@ -406,7 +411,7 @@ void generateBezierPoints() {
 			printf("Using ADAPTIVE_SUBDIVISION\n");
 			adaptiveSubdivision(PointArray, NumPts); 
 		}
-			break;
+		break;
 		default:
 		break;
 	}
@@ -455,9 +460,9 @@ void drawScene(void)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 	
-	// Draw the curve points -- used as double check
-	// glPointSize(PointRadius); //in pixels
-	// glDrawArrays(GL_POINTS, 0, NumPts);
+	// Draw the curve points 
+	glPointSize(PointRadius); //in pixels
+	glDrawArrays(GL_POINTS, 0, NumPts);
 
 	// Draw the segments
 	glLineWidth(SegmentRadius); //in pixels
@@ -467,9 +472,7 @@ void drawScene(void)
 	glBindVertexArray(0);
 
 	//Draw bezier curve
-	if (NumPts > 1) {
-		generateBezierPoints();
-	}
+	generateBezierPoints();
 
 	glBindVertexArray(VAO_curve);
 	glBindBuffer(GL_ARRAY_BUFFER, VBO_curve);
@@ -477,9 +480,9 @@ void drawScene(void)
 	glVertexAttribPointer(0, 3, GL_FLOAT, GL_FALSE, 3 * sizeof(float), (void*)0);
 	glEnableVertexAttribArray(0);
 
-		// Draw the line points
-	glPointSize(CurvePointRadius); //in pixels
-	glDrawArrays(GL_POINTS, 0, CurveNumPts);
+	// Draw the line points -- used as double check
+	// glPointSize(CurvePointRadius); //in pixels
+	// glDrawArrays(GL_POINTS, 0, CurveNumPts);
 
 	glLineWidth(CurveRadius);
 	glDrawArrays(GL_LINE_STRIP, 0, CurveNumPts);

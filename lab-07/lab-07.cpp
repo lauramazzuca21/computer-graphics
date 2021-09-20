@@ -23,29 +23,11 @@ based on the OpenGL Shading Language (GLSL) specifications.
 #include <random>
 
 # include <numeric>
-std::uint8_t p[512];
-
-void reseed_perlin()
-{
-	std::uint32_t seed = std::default_random_engine::default_seed;
-	for (size_t i = 0; i < 256; ++i)
-	{
-		p[i] = static_cast<std::uint8_t>(i);
-	}
-
-	std::shuffle(p, p + 256, std::default_random_engine(seed));
-
-	for (size_t i = 0; i < 256; ++i)
-	{
-		p[256 + i] = p[i];
-	}
-
-}
 
 double noise3D(double x, double y, double z) {
-	const std::int32_t X = static_cast<std::int32_t>(std::floor(x)) & 255;
-	const std::int32_t Y = static_cast<std::int32_t>(std::floor(y)) & 255;
-	const std::int32_t Z = static_cast<std::int32_t>(std::floor(z)) & 255;
+	const std::int32_t X = static_cast<std::int32_t>(x) & 255;
+	const std::int32_t Y = static_cast<std::int32_t>(y) & 255;
+	const std::int32_t Z = static_cast<std::int32_t>(z) & 255;
 
 	x -= std::floor(x);
 	y -= std::floor(y);
@@ -79,7 +61,7 @@ void init_light_object() {
 	obj.name = "light";
 	obj.M = glm::scale(glm::translate(glm::mat4(1), light.position), glm::vec3(0.2, 0.2, 0.2));
 	objects.push_back(obj);
-	movables.push_back(objects.size() - 1);
+	Movables.movables.push_back(objects.size() - 1);
 }
 
 void init_reflective_sphere() {
@@ -95,7 +77,7 @@ void init_reflective_sphere() {
 	obj.name = "Mirror Ball";
 	obj.M = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-3, 2, -6)), glm::vec3(1.0, 1.0, 1.0));
 	objects.push_back(obj);
-	movables.push_back(objects.size() - 1);
+	Movables.movables.push_back(objects.size() - 1);
 }
 
 void init_refractive_obj() {
@@ -111,7 +93,7 @@ void init_refractive_obj() {
 	obj.name = "Glass Cube";
 	obj.M = glm::scale(glm::translate(glm::mat4(1), glm::vec3(-6, 2, -3)), glm::vec3(2.0, 2.0, 2.0));
 	objects.push_back(obj);
-	movables.push_back(objects.size() - 1);
+	Movables.movables.push_back(objects.size() - 1);
 }
 //Textured plane (2 triangles) with a procedural texture but no material, use a texture-only shader
 void init_textured_plane() {
@@ -178,7 +160,7 @@ void init_rock() {
 	obj.name = "Sharpy Rock";
 	obj.M = glm::scale(glm::translate(glm::mat4(1), glm::vec3(5, 0.75, 5)), glm::vec3(0.02, 0.02, 0.02));
 	objects.push_back(obj);
-	movables.push_back(objects.size() - 1);
+	Movables.movables.push_back(objects.size() - 1);
 }
 
 void init_brick_column() {
@@ -195,12 +177,12 @@ void init_brick_column() {
 	obj.name = "Brick Wall Normal Mapping";
 	obj.M = glm::scale(glm::translate(glm::mat4(1), glm::vec3(6, 2, -3)), glm::vec3(4., 4., 4.));
 	objects.push_back(obj);
-	movables.push_back(objects.size() - 1);
+	Movables.movables.push_back(objects.size() - 1);
 	obj.shading = ShadingType::TEXTURE_PHONG; //TEXTURE_ONLY; // NORMAL_MAPPING;
 	obj.name = "Brick Wall Phong Mapping";
 	obj.M = glm::scale(glm::translate(glm::mat4(1), glm::vec3(6, 2, -6)), glm::vec3(4., 4., 4.));
 	objects.push_back(obj);
-	movables.push_back(objects.size() - 1);
+	Movables.movables.push_back(objects.size() - 1);
 }
 
 void init_skybox() {
@@ -232,12 +214,12 @@ void init_windows() {
 	obj.M = glm::scale(glm::translate(glm::mat4(1), glm::vec3(0, 0, -10)), glm::vec3(0.5, 0.5, 0.2));
 	obj.blended = true; // TODO false -> object solid; true -> object semi-transparent if Blending enabled;
 	objects.push_back(obj);
-	movables.push_back(objects.size() - 1);
+	Movables.movables.push_back(objects.size() - 1);
 	transparents.push_back(objects.size() - 1);
 	obj.name = "Big Window";
 	obj.M = glm::scale(glm::translate(glm::mat4(1), glm::vec3(0, 0, -8)), glm::vec3(1., 1., 0.2));
 	objects.push_back(obj);
-	movables.push_back(objects.size() - 1);
+	Movables.movables.push_back(objects.size() - 1);
 	transparents.push_back(objects.size() - 1);
 }
 
@@ -247,13 +229,18 @@ void compute_torus_procedural_texture(Object * obj) {
 	const double fx = width / 2.0;
 	const double fy = height / 2.0;
 	GLubyte image[width][height][3];
-	int i, j, c; double t;
+	int i, j, c; 
+	double t;
 	for (i = 0; i < height; i++) {
 		for (j = 0; j < width; j++) {
-			t = 20 * noise3D(i, j, 0.95) ;
-			image[i][j][0] = (GLubyte)t * 203 + 203;
-			image[i][j][1] = (GLubyte)t * 65 + 65;
-			image[i][j][2] = (GLubyte)t* 84 + 84;
+			t = noise3D(i*0.01, j*0.01, 0.0) ;
+			t += 1.0;
+			t /= 2.0;
+		
+			int c = std::round(255*t);
+			image[i][j][0] = (GLubyte)c ; //* 203 + 203;
+			image[i][j][1] = (GLubyte)c ; //* 65 + 65;
+			image[i][j][2] = (GLubyte)c ; //* 84 + 84;
 		}
 	}
 	/////////////////////////////////////////
@@ -284,11 +271,11 @@ void init_torus() {
 	obj.shading = ShadingType::TEXTURE_ONLY; //PASS_THROUGH; // TEXTURE_ONLY; // TEXTURE_PHONG;  
 	obj.name = "Torus";
 	//obj.diffuseTexID = loadTexture(TextureDir + "WoodGrain.bmp");
-	//obj.diffuseTexID = loadTexture(TextureDir + "brickwall.jpg");
+	// obj.diffuseTexID = loadTexture(TextureDir + "brickwall.jpg");
 	compute_torus_procedural_texture(&obj);
 	obj.M = glm::translate(glm::mat4(1), glm::vec3(-5., 0., 5.));
 	objects.push_back(obj);
-	movables.push_back(objects.size() - 1);
+	Movables.movables.push_back(objects.size() - 1);
 	TorusSetup.torus_index = objects.size() - 1;
 }
 
@@ -559,50 +546,67 @@ void initShader()
 	//The torus
 	init_torus();
 
+	//sort indexes in ascending order
+	std::sort(Movables.movables.begin(), Movables.movables.end());
 
 }
 
-void drawScene() {
-	glClearColor(0.4, 0.4, 0.4, 1);
-	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+bool ascendCompareFunc (std::pair<int, float> d1,std::pair<int, float> d2) { 
+	return (d1.second>d2.second); 
+	}
 
-	for (int i = 0; i < objects.size(); i++) {
-		// TODO if you handle transparency then you must jump any semi transparent object
-		
-		//Shader selection
-		switch (objects[i].shading) {
+void orderTransparentObjects() {
+	std::vector<std::pair<int, float>> distances;
+	for(int i = 0; i < transparents.size(); i++)
+	{
+			distances.push_back(   std::pair<int, float>( transparents[i], glm::distance(ViewSetup.position,objects[transparents[i]].M[3]) )   );
+	}
+
+	std::sort(distances.begin(), distances.end(), ascendCompareFunc);
+
+	transparents.clear();
+
+	for (const auto& d : distances)
+	{
+		transparents.push_back(d.first);
+	}
+}
+
+void render(const Object& o) {
+//Shader selection
+		switch (o.shading) {
 		case ShadingType::NORMAL_MAPPING:
 			glUseProgram(shaders_IDs[NORMAL_MAPPING]);
 			// Caricamento matrice trasformazione del modello
-			glUniformMatrix4fv(base_uniforms[NORMAL_MAPPING].M_Matrix_pointer, 1, GL_FALSE, value_ptr(objects[i].M));
+			glUniformMatrix4fv(base_uniforms[NORMAL_MAPPING].M_Matrix_pointer, 1, GL_FALSE, value_ptr(o.M));
 			//Material loading
-			glUniform3fv(light_uniforms[NORMAL_MAPPING].material_ambient, 1, glm::value_ptr(materials[objects[i].material].ambient));
-			glUniform3fv(light_uniforms[NORMAL_MAPPING].material_diffuse, 1, glm::value_ptr(materials[objects[i].material].diffuse));
-			glUniform3fv(light_uniforms[NORMAL_MAPPING].material_specular, 1, glm::value_ptr(materials[objects[i].material].specular));
-			glUniform1f(light_uniforms[NORMAL_MAPPING].material_shininess, materials[objects[i].material].shininess);
+			glUniform3fv(light_uniforms[NORMAL_MAPPING].material_ambient, 1, glm::value_ptr(materials[o.material].ambient));
+			glUniform3fv(light_uniforms[NORMAL_MAPPING].material_diffuse, 1, glm::value_ptr(materials[o.material].diffuse));
+			glUniform3fv(light_uniforms[NORMAL_MAPPING].material_specular, 1, glm::value_ptr(materials[o.material].specular));
+			glUniform1f(light_uniforms[NORMAL_MAPPING].material_shininess, materials[o.material].shininess);
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, objects[i].diffuseTexID);
+			glBindTexture(GL_TEXTURE_2D, o.diffuseTexID);
 			glActiveTexture(GL_TEXTURE1);
-			glBindTexture(GL_TEXTURE_2D, objects[i].normalTexID);
+			glBindTexture(GL_TEXTURE_2D, o.normalTexID);
 			break;
 		case ShadingType::TEXTURE_PHONG:
 			glUseProgram(shaders_IDs[TEXTURE_PHONG]);
 			// Caricamento matrice trasformazione del modello
-			glUniformMatrix4fv(base_uniforms[TEXTURE_PHONG].M_Matrix_pointer, 1, GL_FALSE, value_ptr(objects[i].M));
+			glUniformMatrix4fv(base_uniforms[TEXTURE_PHONG].M_Matrix_pointer, 1, GL_FALSE, value_ptr(o.M));
 			//Material loading
-			glUniform3fv(light_uniforms[TEXTURE_PHONG].material_ambient, 1, glm::value_ptr(materials[objects[i].material].ambient));
-			glUniform3fv(light_uniforms[TEXTURE_PHONG].material_diffuse, 1, glm::value_ptr(materials[objects[i].material].diffuse));
-			glUniform3fv(light_uniforms[TEXTURE_PHONG].material_specular, 1, glm::value_ptr(materials[objects[i].material].specular));
-			glUniform1f(light_uniforms[TEXTURE_PHONG].material_shininess, materials[objects[i].material].shininess);
+			glUniform3fv(light_uniforms[TEXTURE_PHONG].material_ambient, 1, glm::value_ptr(materials[o.material].ambient));
+			glUniform3fv(light_uniforms[TEXTURE_PHONG].material_diffuse, 1, glm::value_ptr(materials[o.material].diffuse));
+			glUniform3fv(light_uniforms[TEXTURE_PHONG].material_specular, 1, glm::value_ptr(materials[o.material].specular));
+			glUniform1f(light_uniforms[TEXTURE_PHONG].material_shininess, materials[o.material].shininess);
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, objects[i].diffuseTexID);
+			glBindTexture(GL_TEXTURE_2D, o.diffuseTexID);
 			break;
 		case ShadingType::SKYBOX:
 			glUseProgram(shaders_IDs[SKYBOX]);
 			// Caricamento matrice trasformazione del modello
-			glUniformMatrix4fv(base_uniforms[SKYBOX].M_Matrix_pointer, 1, GL_FALSE, value_ptr(objects[i].M));
+			glUniformMatrix4fv(base_uniforms[SKYBOX].M_Matrix_pointer, 1, GL_FALSE, value_ptr(o.M));
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_CUBE_MAP, objects[i].diffuseTexID);
+			glBindTexture(GL_TEXTURE_CUBE_MAP, o.diffuseTexID);
 			// We draw the skybox first, so if we disable writes on the Z-BUFFER, 
 			// all later draw calls will overwrite the skybox pixels for sure, 
 			// no matter how distant is the skybox.
@@ -611,28 +615,28 @@ void drawScene() {
 		case ShadingType::REFLECTION:
 			glUseProgram(shaders_IDs[REFLECTION]);
 			// Caricamento matrice trasformazione del modello
-			glUniformMatrix4fv(base_uniforms[REFLECTION].M_Matrix_pointer, 1, GL_FALSE, value_ptr(objects[i].M));
+			glUniformMatrix4fv(base_uniforms[REFLECTION].M_Matrix_pointer, 1, GL_FALSE, value_ptr(o.M));
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_CUBE_MAP, objects[i].diffuseTexID);
+			glBindTexture(GL_TEXTURE_CUBE_MAP, o.diffuseTexID);
 			break;
 		case ShadingType::REFRACTION:
 			glUseProgram(shaders_IDs[REFRACTION]);
 			// Caricamento matrice trasformazione del modello
-			glUniformMatrix4fv(base_uniforms[REFRACTION].M_Matrix_pointer, 1, GL_FALSE, value_ptr(objects[i].M));
+			glUniformMatrix4fv(base_uniforms[REFRACTION].M_Matrix_pointer, 1, GL_FALSE, value_ptr(o.M));
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_CUBE_MAP, objects[i].diffuseTexID);
+			glBindTexture(GL_TEXTURE_CUBE_MAP, o.diffuseTexID);
 			break;
 		case ShadingType::TEXTURE_ONLY:
 			glUseProgram(shaders_IDs[TEXTURE_ONLY]);
 			// Caricamento matrice trasformazione del modello
-			glUniformMatrix4fv(base_uniforms[TEXTURE_ONLY].M_Matrix_pointer, 1, GL_FALSE, value_ptr(objects[i].M));
+			glUniformMatrix4fv(base_uniforms[TEXTURE_ONLY].M_Matrix_pointer, 1, GL_FALSE, value_ptr(o.M));
 			glActiveTexture(GL_TEXTURE0);
-			glBindTexture(GL_TEXTURE_2D, objects[i].diffuseTexID);
+			glBindTexture(GL_TEXTURE_2D, o.diffuseTexID);
 			break;
 		case ShadingType::PASS_THROUGH:
 			glUseProgram(shaders_IDs[PASS_THROUGH]);
 			// Caricamento matrice trasformazione del modello
-			glUniformMatrix4fv(base_uniforms[PASS_THROUGH].M_Matrix_pointer, 1, GL_FALSE, value_ptr(objects[i].M));
+			glUniformMatrix4fv(base_uniforms[PASS_THROUGH].M_Matrix_pointer, 1, GL_FALSE, value_ptr(o.M));
 			break;
 		default:
 			break;
@@ -642,20 +646,38 @@ void drawScene() {
 		glEnableVertexAttribArray(2);
 		glEnableVertexAttribArray(3);
 
-		glBindVertexArray(objects[i].mesh.vertexArrayObjID);
-		glDrawArrays(GL_TRIANGLES, 0, objects[i].mesh.vertices.size());
+		glBindVertexArray(o.mesh.vertexArrayObjID);
+		glDrawArrays(GL_TRIANGLES, 0, o.mesh.vertices.size());
 
 		glDisableVertexAttribArray(0);
 		glDisableVertexAttribArray(1);
 		glDisableVertexAttribArray(2);
 		glDisableVertexAttribArray(3);
 		glDepthMask(GL_TRUE);
+}
+
+void drawScene() {
+	glClearColor(0.4, 0.4, 0.4, 1);
+	glClear(GL_DEPTH_BUFFER_BIT | GL_COLOR_BUFFER_BIT);
+
+	for (int i = 0; i < objects.size(); i++) {
+		// TODO if you handle transparency then you must jump any semi transparent object
+		//skip objects whose index in objects vector is in the transparents one
+		if (std::find(transparents.begin(), transparents.end(), i) != transparents.end())
+			continue;
+		
+		render(objects[i]);
+		
 	}
 
 	// Transparent objects reordering
+	orderTransparentObjects();
 	// Draw in a reversed order: from farest to nearest
 	// TODO RENDER TRANSPARENT OBJECTS 
-		
+	for (const int& i : transparents)
+	{
+		render(objects[i]);
+	}	
 	// OLD fixed pipeline for simple graphics and symbols
 	glUseProgram(0);
 	printToScreen();
@@ -709,16 +731,16 @@ void mouseClick(int button, int state, int x, int y)
 	if (modifiers == GLUT_ACTIVE_SHIFT) {
 		switch (button)
 		{
-		case SHIFT_WHEEL_UP: moveCameraUp(); break;
-		case SHIFT_WHEEL_DOWN: moveCameraDown(); break;
+		case 3: moveCameraUp(); break;
+		case 4: moveCameraDown(); break;
 		}
 		return;
 	}
 	if (modifiers == GLUT_ACTIVE_CTRL) {
 		switch (button)
 		{
-		case CTRL_WHEEL_UP: moveCameraRight(); break;
-		case CTRL_WHEEL_DOWN: moveCameraLeft(); break;
+		case 3: moveCameraRight(); break;
+		case 4: moveCameraLeft(); break;
 		}
 		return;
 	}
@@ -867,12 +889,12 @@ void special(int key, int x, int y)
 	switch (key)
 	{
 	case GLUT_KEY_LEFT:
-		selected_obj = selected_obj > 0 ? selected_obj - 1 : movables.size() - 1;
-		ViewSetup.target = objects[movables[selected_obj]].M * glm::vec4(0.f, 0.f, 0.f, 1.f);
+		selected_obj = Movables.previous();
+		ViewSetup.target = objects[selected_obj].M * glm::vec4(0.f, 0.f, 0.f, 1.f);
 		break;
 	case GLUT_KEY_RIGHT:
-		selected_obj = (selected_obj + 1) < movables.size() ? selected_obj + 1 : 0;
-		ViewSetup.target = objects[movables[selected_obj]].M * glm::vec4(0.f, 0.f, 0.f, 1.f);
+		selected_obj = Movables.next();
+		ViewSetup.target = objects[selected_obj].M * glm::vec4(0.f, 0.f, 0.f, 1.f);
 		break;
 	default:
 		break;
@@ -903,7 +925,7 @@ void main_menu_func(int option)
 
 void material_menu_function(int option)
 {
-	objects[movables[selected_obj]].material = (MaterialType)option;
+	objects[selected_obj].material = (MaterialType)option;
 }
 
 void buildOpenGLMenu()
@@ -954,13 +976,21 @@ void moveCameraBack()
 }
 
 void moveCameraLeft()
-{
-	// SEE Lab_03
+{ 
+	glm::vec3 direction = ViewSetup.target - ViewSetup.position;
+	glm::vec3 slide_vector = glm::normalize(glm::cross(direction, glm::vec3(ViewSetup.upVector)));
+	glm::vec3 rightDirection = slide_vector * CAMERA_TRASLATION_SPEED;
+	ViewSetup.position += glm::vec4(rightDirection, 0.0);
+	ViewSetup.target += glm::vec4(rightDirection, 0.0);
 }
 
 void moveCameraRight()
 {
-	// SEE Lab_03
+	glm::vec3 direction = ViewSetup.target - ViewSetup.position;
+	glm::vec3 slide_vector = glm::normalize(glm::cross(direction, glm::vec3(ViewSetup.upVector)));
+	glm::vec3 rightDirection = slide_vector * CAMERA_TRASLATION_SPEED;
+	ViewSetup.position -= glm::vec4(rightDirection, 0.0);
+	ViewSetup.target -= glm::vec4(rightDirection, 0.0);
 }
 
 void moveCameraUp()
@@ -983,8 +1013,38 @@ void moveCameraDown()
 
 void modifyModelMatrix(glm::vec3 translation_vector, glm::vec3 rotation_vector, GLfloat angle, GLfloat scale_factor)
 {
-// SEE LAB_03 se volete potete inserire i tool di trasformazione gi� implementati 	
-}
+	Object& current = objects.at(selected_obj);
+	switch (TransformMode)
+	{
+	case OCS:
+	{
+		//since there can only be one modification at the time of the model, the model matrix is always multiplied by all of the transformations matrices
+		//this way we don't need to check which one is currently happening
+		current.M *= glm::rotate(glm::mat4(1.0f), angle, rotation_vector);
+		current.M *= glm::scale(glm::mat4(1.0f), glm::vec3(scale_factor));
+		current.M *= glm::translate(glm::mat4(1.0f), translation_vector);
+	}
+		break;
+	case WCS:
+	{
+		glm::mat4 currentM = glm::mat4(current.M);
+		glm::mat4 inverseAxisM = glm::inverse(current.M);
+		//transform my object Model matrix in world basis which is I=MM^-1
+		current.M *= inverseAxisM;
+		//make modifications
+		current.M *= glm::rotate(glm::mat4(1.0f), angle, rotation_vector);
+		current.M *= glm::scale(glm::mat4(1.0f), glm::vec3(scale_factor));
+		current.M *= glm::translate(glm::mat4(1.0f), translation_vector);
+		//transform coord system back to OCS
+		current.M *= currentM;
+	}
+		break;
+	default:
+		break;
+	}
+
+	if (current.name == "light")
+		light.position = current.M[3];}
 
 /*
  * Computes the Vertex attributes data for segment number j of wrap number i.
@@ -1007,7 +1067,7 @@ void computeTorusVertex(int i, int j, Mesh* mesh) {
 	mesh->vertices.push_back(glm::vec3(x, y, z));
 	mesh->normals.push_back(glm::vec3(sintheta * cosphi, sinphi, costheta * cosphi));
 	//pig gives the frequency with which the texture is associated to the vertices so the result is either a stretch or a compression of the texture
-	mesh->texCoords.push_back(glm::vec2(theta/pig, phi/pig));
+	mesh->texCoords.push_back(glm::vec2(theta, phi));
 }
 
 void compute_Torus(Mesh* mesh)
@@ -1311,10 +1371,10 @@ void printToScreen()
 {
 	string axis = "Axis: ";
 	string mode = "Navigate/Modify: ";
-	string obj = "Object: " + objects[movables[selected_obj]].name;
+	string obj = "Object: " + objects[selected_obj].name;
 	string ref = "WCS/OCS: ";
 	string shader = "Shader: ";
-	switch (objects[movables[selected_obj]].shading) {
+	switch (objects[selected_obj].shading) {
 	case ShadingType::NORMAL_MAPPING:shader += "NORMAL_MAPPING";
 		break;
 	case ShadingType::TEXTURE_PHONG:shader += "TEXTURE_PHONG";
