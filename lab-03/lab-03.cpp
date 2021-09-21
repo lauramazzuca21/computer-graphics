@@ -85,7 +85,7 @@ void init_sphere_SMOOTH() {
 	// Object Setup use the light shader and a material for color and light behavior
 	Object obj4 = {};
 	obj4.mesh = sphereS;
-	obj4.material = MaterialType::EMERALD;
+	obj4.material = MaterialType::YELLOW_RUBBER;
 	obj4.shading = ShadingType::BLINN;
 	obj4.name = "Sphere SMOOTH";
 	obj4.M = glm::translate(glm::mat4(1), glm::vec3(6., 0., -3.));
