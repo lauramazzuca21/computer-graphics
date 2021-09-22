@@ -1,3 +1,3 @@
 #!/usr/bin/bash
 
-g++ CoronaGame.cpp ShaderMaker.cpp -lglut -lGLU -lGL -lGLEW -o CoronaGame
+g++ lunar-lander.cpp ShaderMaker.cpp -lglut -lGLU -lGL -lGLEW -o lunar-lander
