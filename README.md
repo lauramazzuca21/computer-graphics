@@ -17,11 +17,12 @@ Given the Lab01 setup, modify it to:
 - [x] drag control points to change their position
 - [x] draw Bézier curve with the optimized adaptive subdivision method
 
-## Lab 02 - 2D CoronaGame
-- [x] Q+SPACE for strong attack with cooldown
-- [x] change viruses's look
+## Lab 02 - 2D Lunar Lander Game
+- [x] A push from left, D push from right, SPACE thrust
+- [x] physics for moving the ship
+- [x] particle system for pushes and thrust
 - [x] starry background
-- [x] win condition: kill all enemies before the last lane reaches the spaceship
+- [x] win condition: land the lunar module without breaking it
 
 ## Lab 03 - 3D Polygonal Meshes Scene Control
 Given the Lab03 setup, modify it to:
