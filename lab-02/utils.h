@@ -117,7 +117,7 @@ static void disegna_cerchio(float cx, float cy, float raggiox, float raggioy, gl
 namespace objects {
 class Stars {
     public:
-    static const int timeout = 100;
+    static const int timeout = 500;
     int timeout_stars = -1;
     int nStars = 50;
     std::vector<math_utils::Point> pos_stars;

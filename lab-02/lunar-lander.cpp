@@ -45,6 +45,7 @@ void update(int a)
 		return;
 	}
 
+    stars.update(width, height);
     ship.update();
     ship.sparks.update();
 
@@ -53,7 +54,7 @@ void update(int a)
         if (ship.posx < flagX && ship.posx > width - flagX  
         && ship.vely > -1.0f && ship.angle <= PI/4.0f && ship.angle >= -PI/4.0f)
             game_won = true;
-        printf("game %d ship vely %f angle %f\n", game_won ? 1 : 0, ship.vely, ship.angle);
+        // printf("game %d ship vely %f angle %f\n", game_won ? 1 : 0, ship.vely, ship.angle);
     }
     glutPostRedisplay();
 	glutTimerFunc(5, update, 0);
@@ -73,8 +74,6 @@ void drawScene(void)
 	glUniformMatrix4fv(MatModel, 1, GL_FALSE, value_ptr(Model));
 	glDrawArrays(GL_TRIANGLES, 0, vertices_sky);
 	glBindVertexArray(0);
-
-	stars.update(width, height);
 	
 	glBindVertexArray(VAO_STAR);
 	for (int i = 0; i < stars.nStars; i++)
